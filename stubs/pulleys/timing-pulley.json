@@ -1,0 +1,28 @@
+{
+  "id": "pulleys/timing-pulley",
+  "source": "mechanica",
+  "status": "exists",
+  "kind": "made",
+
+  "parameters": { "profile": "GT2 2 mm", "teeth": 20, "bore": 5 },
+  "designation": "GT2 2 mm 20-tooth timing pulley",
+
+  "envelope": { "min": [-7.4, -7.4, 0], "max": [7.4, 7.4, 11] },
+  "mass": { "volume_mm3": 1180, "centroid": [0, 0, 5.2] },
+
+  "anchors": {
+    "bore": {
+      "kind": "face",
+      "origin": [0, 0, 0],
+      "normal": [0, 0, 1],
+      "clock": [1, 0, 0],
+      "interface": { "archetype": "bore", "diameter": 5, "gender": "hole" }
+    },
+    "pitch_circle": {
+      "kind": "circle",
+      "origin": [0, 0, 5.5],
+      "normal": [0, 0, 1],
+      "interface": { "archetype": "pitch_circle", "diameter": 12.73, "profile": "GT2 2 mm", "teeth": 20 }
+    }
+  }
+}

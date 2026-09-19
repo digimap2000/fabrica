@@ -1,0 +1,14 @@
+# Build trees
+build/
+build-*/
+
+# Baked component metadata fetched from a mechanica release. Regenerated, not
+# authored - see README.md under "Cache the metadata, call for geometry".
+cache/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc

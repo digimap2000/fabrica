@@ -1,0 +1,174 @@
+// A single-axis belt-driven linear stage.
+//
+// The first machine, and chosen because it is not a demo. A bed slinger is
+// three of these and a frame; a moving gantry is three of these and a frame. So
+// the first thing fabrica assembles is the unit everything else is made of,
+// which forces sub-assembly recursion on day one rather than leaving it to be
+// retrofitted.
+//
+// It was written by hand before any code existed, because a file is the
+// cheapest possible test of whether joints, anchors and limits are the right
+// primitives. Three things it found, all recorded below where they bite:
+//
+//   1. Anchors come in two kinds. A motor face is a frame; an extrusion slot is
+//      a line you may clamp anywhere along. Those are not the same thing and
+//      one syntax for both would have been wrong.
+//   2. A fastening is not a separate concept from the joint it realises. Every
+//      fixed joint already knows what holds it, so the screws live there - and
+//      the BOM and the build step fall out of the same declaration.
+//   3. The belt closes a loop, which the tree rule forbids. It does not break
+//      the rule; it clarifies it. See the route at the bottom.
+
+@proven 1;
+@machine "{travel} mm belt-driven linear stage on {rail_profile}";
+
+// Four decisions. The budget matters more than it looks: a machine that needs
+// forty questions is not a machine design, it is CAD with a browser on top.
+// Travel is the only thing chosen freely - everything else is settled by what
+// the stage has to do or what it has to mate with, which is what makes them
+// form rather than size.
+
+@parameter travel: length {
+    label   = "Travel";
+    aspect  = size;
+    min     = 100;
+    max     = 600;
+    default = 300;
+    summary = "How far the carriage moves, end to end";
+    convention = "The usable stroke, not the length of the beam - the beam is longer by what the motor and idler ends take up.";
+}
+
+@parameter rail_profile: standard {
+    label   = "Rail";
+    aspect  = form;
+    family  = extrusion;
+    default = "2020";
+    summary = "The extrusion the carriage rides on";
+    convention = "2020 is the usual choice and stiff enough for most of a metre. 2040 buys stiffness in the direction of the cutting load, not along the travel.";
+}
+
+@parameter motor_frame: standard {
+    label   = "Motor";
+    aspect  = form;
+    family  = nema;
+    default = "17";
+    summary = "The stepper driving the belt";
+    convention = "NEMA 17 suits a carriage; NEMA 23 is for a gantry carrying its own weight and a spindle.";
+}
+
+@parameter belt_profile: standard {
+    label   = "Belt";
+    aspect  = form;
+    family  = synchronous_belt;
+    default = "GT2 2 mm";
+    summary = "The belt profile, which settles the pulleys with it";
+    convention = "Pick the belt and the pulleys follow. The reverse costs you a pulley you cannot buy a belt for.";
+}
+
+// --- what is bought ---------------------------------------------------------
+// Cut to length from stock, and the arithmetic is directed: the beam follows
+// the travel, never the other way round. 120 is what the two ends take up - the
+// motor mount at one end and the idler block at the other - and it is written
+// here rather than inside either part because it is a property of putting the
+// two together, which is exactly what this file is for.
+
+stock beam   = <extrusion>(profile=rail_profile, length=travel + 120);
+stock motor  = <nema>(frame=motor_frame, shaft=5, body=40);
+stock t_nut  = <t-nut>(profile=rail_profile, thread="M5");
+
+// --- what is made -----------------------------------------------------------
+// Three of these exist in mechanica today. Four do not, and that is the point
+// rather than a problem: a machine that cannot be assembled without them is
+// evidence of demand, which is what the part portfolio wants and has never
+// had. Marked so the list can be read off.
+
+part drive_pulley  = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=5);
+part idler_pulley  = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=8, flange=1);
+part idler_bush    = <bushings/flanged-bushing>(bore=5, outer_diameter=8, length=7);
+
+part mount         = <brackets/motor-mount>(profile=rail_profile, frame=motor_frame);   // TODO(mechanica)
+part idler_block   = <brackets/idler-block>(profile=rail_profile, spindle=5);           // TODO(mechanica)
+part carriage      = <carriages/belt-carriage>(profile=rail_profile);                   // TODO(mechanica)
+part clamp         = <clamps/belt-clamp>(profile=belt_profile);                         // TODO(mechanica)
+
+// --- how it goes together ---------------------------------------------------
+// The beam is ground. Everything else hangs off it, and the direction of every
+// arrow is parent to child, which is what makes this a tree rather than a pile
+// of relationships - and what makes a build order a traversal of it.
+
+ground beam;
+
+// An extrusion slot is a TRACK: a frame that slides along an axis, so it takes
+// a position. A bracket's mounting face is a FACE: a frame, full stop. Pinning
+// a track with @ is how a fixed joint uses one.
+//
+// The fastening lives in the joint because the joint is what it realises. Four
+// screws here is a pattern, a BOM line, and a sentence in the build
+// instructions, all from one declaration.
+
+joint fixed beam.slot_left@0 -> mount.rail_face {
+    fasten = <hardware/cap-screw>(standard="M5", length=10) x4 into t_nut;
+}
+
+joint fixed beam.slot_left@(travel + 100) -> idler_block.rail_face {
+    fasten = <hardware/cap-screw>(standard="M5", length=10) x4 into t_nut;
+}
+
+joint fixed mount.motor_face -> motor.flange {
+    fasten = <hardware/cap-screw>(standard="M3", length=8) x4;
+}
+
+joint fixed motor.shaft -> drive_pulley.bore {
+    fasten = grub;      // a set screw onto the flat, not a through-fixing
+}
+
+// The idler turns and nothing drives it, so it is revolute with no limit. The
+// bush is what it turns on, which is why it is a joint and not a note.
+joint fixed    idler_block.spindle -> idler_bush.bore;
+joint revolute idler_bush.outer    -> idler_pulley.bore {
+    axis = [0, 0, 1];
+}
+
+// The one joint that moves under the user's control. The track is NOT pinned
+// with @ here, and that is the whole difference: a prismatic joint consumes the
+// freedom the track already has, and the limit says how much of it is usable.
+joint prismatic beam.slot_top -> carriage.rail_face {
+    axis  = [1, 0, 0];
+    limit = [0, travel];
+    home  = 0;
+}
+
+joint fixed carriage.belt_face -> clamp.carriage_face {
+    fasten = <hardware/cap-screw>(standard="M3", length=12) x2 into <hardware/hex-nut>(standard="M3");
+}
+
+// --- the belt ---------------------------------------------------------------
+// This is where the tree nearly breaks. A belt round two pulleys and a carriage
+// closes a loop, and a closed loop is what the tree rule forbids, because
+// solving one needs a constraint solver.
+//
+// It does not break the rule, and working out why was worth the file on its
+// own. A belt is not a joint. It is stock, routed through anchors, and its
+// LENGTH is derived from the geometry it is routed around - which is directed
+// arithmetic, the same kind as the beam following the travel. Nothing is
+// solved for; a number is computed from poses the tree already resolved.
+//
+// So: anything flexible - belt, cable, chain, tube - is routed stock with a
+// derived length. If something flexible ever cannot be expressed this way, that
+// is the signal a solver is genuinely required rather than merely convenient,
+// and it should be taken as one.
+
+route belt = <synchronous-belt>(profile=belt_profile) {
+    over    = [drive_pulley.pitch_circle, idler_pulley.pitch_circle];
+    anchors = [clamp.belt_a, clamp.belt_b];
+}
+
+// What the motor does to the carriage, recorded rather than solved. It is
+// arithmetic over the drive pulley's pitch diameter, and it is the number a
+// user actually wants off this machine - steps per millimetre - as well as the
+// one a kinematic sweep needs to animate it.
+//
+// Least settled thing in the file. It may want to be a property of the route
+// rather than a declaration of its own.
+
+drive motor -> carriage via belt;
