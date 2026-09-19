@@ -11,7 +11,7 @@ import { dirname, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parse } from '../src/parse.js';
-import { loadCatalogue } from '../src/catalogue.js';
+import { loadCatalogue } from '../src/catalogue-fs.js';
 import { resolve, ERROR } from '../src/resolve.js';
 import { billOfMaterials, printList } from '../src/bom.js';
 import { buildOrder } from '../src/build.js';

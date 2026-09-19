@@ -64,8 +64,14 @@ node bin/fabrica.js <machine> --where                 # poses, extent, swept ext
 node bin/fabrica.js <machine> --at carriage=300       # put a moving joint somewhere
 node bin/fabrica.js <machine> --set travel=500 --bom  # configure and narrow
 node bin/fabrica.js <machine> --json                  # for a caller, not a reader
-node --test tests/*.test.js                           # 38 tests, under a second
+node bin/serve.js                                     # the viewer, on :8081
+node --test tests/*.test.js                           # 49 tests, under a second
 ```
+
+`src/` runs in **both** node and the browser, and must keep doing so. A module
+that imports `node:` anything cannot be imported by the viewer - which is why
+`catalogue.js` holds no imports at all and `catalogue-fs.js` sits beside it. A
+module does not get to be half portable.
 
 **Geometry is the easiest thing here to get plausibly wrong.** A sign error puts
 a bracket through the extrusion it is bolted to and every number downstream

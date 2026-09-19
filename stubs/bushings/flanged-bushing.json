@@ -71,5 +71,8 @@
         "gender": "shaft"
       }
     }
+  },
+  "mechanica": {
+    "id": "bushings/flanged-bushing"
   }
 }

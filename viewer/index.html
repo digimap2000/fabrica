@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fabrica</title>
+<link rel="stylesheet" href="/viewer/viewer.css">
+</head>
+<body>
+  <header>
+    <div class="logo">fabrica<span aria-hidden="true">.</span></div>
+    <div class="designation" id="designation"></div>
+    <div class="spacer"></div>
+    <!-- Which mechanica this is drawn from. On screen rather than in a log
+         because it is the one fact that explains a viewport full of boxes: a
+         part is a box when the service has no geometry for it, and knowing
+         WHICH service answered is the first question worth asking. -->
+    <div class="upstream" id="upstream">connecting to mechanica…</div>
+  </header>
+
+  <aside id="controls">
+    <section>
+      <h2>Configuration</h2>
+      <div id="parameters"></div>
+    </section>
+    <section id="joints-section" hidden>
+      <h2>Movement</h2>
+      <div id="joints"></div>
+    </section>
+    <section>
+      <h2>What it comes to</h2>
+      <dl id="derived"></dl>
+    </section>
+    <section>
+      <h2>Parts</h2>
+      <div id="legend">
+        <p><span class="swatch made"></span>made - geometry from mechanica</p>
+        <p><span class="swatch boxed"></span>bought, or no geometry yet - drawn as its envelope</p>
+      </div>
+      <div id="bom"></div>
+    </section>
+  </aside>
+
+  <main>
+    <canvas id="scene"></canvas>
+    <div id="status" role="status"></div>
+  </main>
+
+<script type="module" src="/viewer/viewer.js"></script>
+</body>
+</html>

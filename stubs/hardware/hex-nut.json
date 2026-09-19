@@ -7,5 +7,16 @@
     "standard": "M3"
   },
   "designation": "M3 hex nut",
-  "anchors": {}
+  "anchors": {},
+  "mechanica": {
+    "id": "hardware/hex-nut",
+    "map": {
+      "standard": {
+        "M3": "hex_nut:M3"
+      }
+    },
+    "rename": {
+      "standard": "fastener"
+    }
+  }
 }

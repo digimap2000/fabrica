@@ -8,5 +8,17 @@
     "length": 10
   },
   "designation": "M5x10 socket cap screw",
-  "anchors": {}
+  "anchors": {},
+  "mechanica": {
+    "id": "hardware/cap-screw",
+    "map": {
+      "standard": {
+        "M5": "cap_screw:M5",
+        "M3": "cap_screw:M3"
+      }
+    },
+    "rename": {
+      "standard": "fastener"
+    }
+  }
 }

@@ -7,7 +7,8 @@
   "bin": { "fabrica": "bin/fabrica.js" },
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "stage": "node bin/fabrica.js machines/linear-stage.machine"
+    "stage": "node bin/fabrica.js machines/linear-stage.machine",
+    "serve": "node bin/serve.js"
   },
   "engines": { "node": ">=20" }
 }
