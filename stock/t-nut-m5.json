@@ -1,0 +1,24 @@
+{
+  "id": "t-nut",
+  "source": "fabrica/stock",
+  "status": "exists",
+  "kind": "bought",
+  "parameters": {
+    "profile": "2020",
+    "thread": "M5"
+  },
+  "designation": "M5 T-nut for 2020",
+  "envelope": {
+    "min": [
+      -5,
+      -9.5,
+      -3
+    ],
+    "max": [
+      5,
+      9.5,
+      0
+    ]
+  },
+  "anchors": {}
+}

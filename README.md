@@ -198,12 +198,42 @@ beside the viewer when there is one. That is also why there is no TypeScript
 here: it would buy a build step to protect a few hundred lines that the tests
 already cover.
 
+Poses are resolved too, so the numbers that were notes are numbers:
+
+```
+FLEXIBLE STOCK
+  belt  cut to 816.0 mm   (400.0 mm centres, wrap 180 deg and 180 deg, 10/10 teeth in mesh)
+
+SPACE
+  at rest   450 x 120 x 58 mm
+  swept     450 x 120 x 58 mm   (carriage through its limits, 9 samples)
+```
+
 **What building it settled.** The build order is a depth-first traversal from
 ground and nothing more, which is the argument for joints over transforms made
 concrete - a transform can place a part but cannot say what it is placed *on*,
 so it could never yield this. The tree rule pays for itself the same way: the
 traversal is a correct assembly sequence precisely because every part has
 exactly one parent.
+
+Placing a machine is one multiplication per joint and no iteration at all:
+
+    pose(child) = pose(parent) . F(parent anchor) . flip . F(child anchor)^-1
+
+That is the tree rule cashing out. A CAD package needs a solver here because it
+does not know which body is the reference for which; fabrica always does,
+because the joint said so. The belt length is derived the same way - measured
+between things already placed, never solved for - which is what keeps a closed
+loop legal under a rule that forbids them.
+
+**The belt check found a real fault on its first run.** The drive pulley hangs
+off a motor shaft and the idler sits on a spindle, so the two stack in opposite
+directions, and the equal 46 mm heights that looked obviously right put the two
+pitch circles 13 mm apart along their axis - a belt that climbs its flange and
+shreds. The centre-distance calculation projects that offset out, which is what
+makes the distance correct and is exactly what would have hidden it, so the
+discarded component is now looked at rather than dropped. `stubs/brackets/
+idler-block.json` carries the corrected 33 mm and why.
 
 **What it exposed, which is the more useful half:**
 
@@ -219,6 +249,12 @@ exactly one parent.
 - **`drive` barely earns its keep.** It carries a relation nothing yet computes.
   It stays for now because steps-per-millimetre is a number a user genuinely
   wants off this machine, but it should probably become a property of the route.
+- **Interference wants geometry, not boxes.** The clash check compares
+  axis-aligned boxes, so it over-reports every part that is not a box. The
+  direction it is sound in is the useful one - boxes that do not overlap cannot
+  be parts that do - so an empty result is a real all-clear and a hit is a
+  candidate to look at. It becomes an answer when there are meshes to ask.
 
-Next, in order: poses, so a belt length and a working envelope are numbers
-rather than notes; then the viewer, fetching meshes from mechanica.
+Next: the viewer, fetching meshes from mechanica - which is the first time
+anything here talks to the API rather than to a stub, and therefore the first
+real test of the boundary this project exists to keep.

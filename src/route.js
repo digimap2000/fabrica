@@ -1,0 +1,142 @@
+// How long the belt is.
+//
+// This is the number the design note promised and the first resolver could only
+// apologise for. It is worth being clear about what makes it legitimate: the
+// belt closes a loop, and a closed loop is what the tree rule forbids - but
+// nothing here is solved. The poses were already settled by the tree walk, and
+// this measures the path between things that are already placed. Deriving a
+// length from known positions is arithmetic; finding positions that satisfy a
+// length would be a solver, and that is the line.
+//
+// The geometry is the standard two-pulley open belt, and it is exact rather
+// than approximate as long as the two axes are parallel - which is checked,
+// because two pulleys whose axes have drifted apart is a real mistake and the
+// formula would quietly return a plausible number for it.
+
+import { anchorInWorld } from './pose.js';
+import { cross, distance, dot, length, normalise, origin } from './matrix.js';
+import { ERROR, WARN } from './resolve.js';
+
+const radiusOf = (anchor) => {
+  const face = anchor.interface ?? {};
+  if (face.diameter !== undefined) return face.diameter / 2;
+  if (face.radius !== undefined) return face.radius;
+  return null;
+};
+
+export function resolveRoutes(resolved, poses) {
+  const results = [];
+  const diagnostics = [];
+
+  for (const route of resolved.routes) {
+    const overRefs = route.over?.items ?? [];
+    const endRefs = route.anchors?.items ?? [];
+
+    const over = overRefs.map((ref) => {
+      const world = anchorInWorld(resolved, poses, ref);
+      return world && { ref, ...world, radius: radiusOf(world.anchor) };
+    });
+    const ends = endRefs.map((ref) => anchorInWorld(resolved, poses, ref));
+
+    const name = route.name;
+    if (over.some((o) => !o) || ends.some((e) => !e)) {
+      diagnostics.push({ severity: WARN, message: `route '${name}': not every anchor is placed, so no length is derived` });
+      results.push({ name, id: route.of.id, length: null });
+      continue;
+    }
+    if (over.length !== 2) {
+      // Three or more pulleys is a real arrangement - an idler tensioning a
+      // long run - and the path is then a convex hull rather than one pair of
+      // tangents. Refused rather than approximated, because a wrong belt is
+      // bought and cut before anybody notices.
+      diagnostics.push({ severity: ERROR, message: `route '${name}': ${over.length} pulleys, and only the two-pulley path is derived so far` });
+      results.push({ name, id: route.of.id, length: null });
+      continue;
+    }
+    if (over.some((o) => o.radius === null)) {
+      diagnostics.push({ severity: ERROR, message: `route '${name}': a pitch circle with no diameter in its interface` });
+      results.push({ name, id: route.of.id, length: null });
+      continue;
+    }
+
+    const [a, b] = over;
+    const skew = length(cross(normalise(a.axis), normalise(b.axis)));
+    if (skew > 1e-6) {
+      diagnostics.push({
+        severity: ERROR,
+        message: `route '${name}': the two pulley axes are ${(Math.asin(Math.min(1, skew)) * 180 / Math.PI).toFixed(1)} degrees apart, `
+               + 'so the belt does not lie in a plane and this length would be wrong',
+      });
+      results.push({ name, id: route.of.id, length: null });
+      continue;
+    }
+
+    // Centre distance measured in the plane of the belt, which is the distance
+    // between the axes rather than between the two origins - they are the same
+    // here only because the pulleys are level with each other, and will not be
+    // the day somebody staggers them.
+    const between = [a.point[0] - b.point[0], a.point[1] - b.point[1], a.point[2] - b.point[2]];
+    const along = dot(between, normalise(a.axis));
+    const centres = Math.sqrt(Math.max(0, dot(between, between) - along * along));
+
+    const dr = a.radius - b.radius;
+    if (centres <= Math.abs(dr)) {
+      diagnostics.push({ severity: ERROR, message: `route '${name}': the pulleys overlap, so no belt path exists` });
+      results.push({ name, id: route.of.id, length: null });
+      continue;
+    }
+
+    // The component the centre distance threw away. Projecting it out is what
+    // makes the distance right, and it is also what would hide a pair of
+    // pulleys that are level but not in the same plane - a belt running 13 mm
+    // out over 400 will climb its flange and shred. So the number that was
+    // discarded gets looked at rather than dropped.
+    if (Math.abs(along) > 0.5) {
+      diagnostics.push({
+        severity: ERROR,
+        message: `route '${name}': the two pitch circles are ${Math.abs(along).toFixed(1)} mm apart along the axis, `
+               + 'so the belt does not run true - they have to be coplanar',
+      });
+    }
+
+    const tangent = Math.sqrt(centres * centres - dr * dr);
+    const alpha = Math.asin(dr / centres);
+    const wrapA = Math.PI + 2 * alpha;
+    const wrapB = Math.PI - 2 * alpha;
+    const closed = 2 * tangent + a.radius * wrapA + b.radius * wrapB;
+
+    // An open belt clamped at both ends follows the closed path and is then cut
+    // between the clamps, so the gap between them comes off. Two ends is the
+    // only case this handles, and anything else is refused above.
+    const gap = ends.length === 2 ? distance(ends[0].point, ends[1].point) : 0;
+    if (ends.length !== 2) {
+      diagnostics.push({ severity: WARN, message: `route '${name}': ${ends.length} clamped ends, so the cut is not subtracted` });
+    }
+
+    results.push({
+      name,
+      id: route.of.id,
+      length: closed - gap,
+      closed,
+      gap,
+      centres,
+      wrap: [wrapA, wrapB].map((w) => (w * 180) / Math.PI),
+      teethEngaged: engagement(resolved, over, [wrapA, wrapB]),
+    });
+  }
+
+  return { routes: results, diagnostics };
+}
+
+// How many teeth are actually in mesh, which is the number that decides whether
+// a belt skips under load. Derived from the wrap and the tooth count the
+// interface already carries, so it costs nothing to say.
+function engagement(resolved, over, wraps) {
+  return over.map((o, i) => {
+    const teeth = o.anchor.interface?.teeth;
+    if (!teeth) return null;
+    return Math.round((wraps[i] / (2 * Math.PI)) * teeth);
+  });
+}
+
+export { origin };

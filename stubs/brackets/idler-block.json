@@ -1,0 +1,82 @@
+{
+  "id": "brackets/idler-block",
+  "source": "mechanica",
+  "status": "does-not-exist",
+  "kind": "made",
+  "parameters": {
+    "profile": "2020",
+    "spindle": 5,
+    "spindle_height": 33
+  },
+  "designation": "2020 idler block, 5 mm spindle",
+  "envelope": {
+    "min": [
+      -15,
+      -15,
+      0
+    ],
+    "max": [
+      15,
+      15,
+      39
+    ]
+  },
+  "mass": {
+    "volume_mm3": 11800
+  },
+  "anchors": {
+    "rail_face": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "t_slot_pattern",
+        "profile": "2020",
+        "holes": 4,
+        "spacing": [
+          20,
+          20
+        ],
+        "screw": "M5",
+        "gender": "clearance"
+      }
+    },
+    "spindle": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        33
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "bore",
+        "diameter": 5,
+        "gender": "shaft"
+      }
+    }
+  },
+  "_note": "Spindle at 33 rather than the 46 first written. The resolver's belt check found the two pitch circles 13 mm apart along their axis, which is a belt that climbs its flange and shreds - the drive pulley hangs off the motor shaft pointing away from the motor, the idler sits on a spindle pointing away from the block, so the two stack in opposite directions and the heights cannot simply match. 33 is what brings them coplanar. Found by the tool, not by eye."
+}

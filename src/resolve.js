@@ -257,6 +257,9 @@ function checkAnchors(joint, instances, diagnostics, where) {
 
 // --- routes -----------------------------------------------------------------
 
+// Only the shape of a route is checked here. Its length is derived in route.js,
+// once poses exist - this module deliberately knows nothing about where
+// anything is.
 function checkRoutes(machine, instances, params, diagnostics) {
   for (const route of machine.routes) {
     const refs = [...(route.over?.items ?? []), ...(route.anchors?.items ?? [])];
@@ -274,9 +277,6 @@ function checkRoutes(machine, instances, params, diagnostics) {
         diagnostics.push({ severity: ERROR, message: `route '${route.name}': a belt runs over a circle, and '${ref.instance}.${ref.anchor}' is a ${anchor.kind}` });
       }
     }
-    // The length is derived, and deriving it needs poses this resolver does not
-    // compute yet. Said plainly rather than reported as a number that is not one.
-    diagnostics.push({ severity: WARN, message: `route '${route.name}': length is derived from resolved poses, which are not computed yet - it is absent from the BOM rather than guessed` });
   }
 }
 

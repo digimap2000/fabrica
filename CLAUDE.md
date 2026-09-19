@@ -60,10 +60,19 @@ Run from the repository root. Node 20 or later; no dependencies, no build step.
 
 ```sh
 node bin/fabrica.js machines/linear-stage.machine     # BOM, print list, build order
+node bin/fabrica.js <machine> --where                 # poses, extent, swept extent
+node bin/fabrica.js <machine> --at carriage=300       # put a moving joint somewhere
 node bin/fabrica.js <machine> --set travel=500 --bom  # configure and narrow
 node bin/fabrica.js <machine> --json                  # for a caller, not a reader
-node --test tests/*.test.js                           # 22 tests, under a second
+node --test tests/*.test.js                           # 38 tests, under a second
 ```
+
+**Geometry is the easiest thing here to get plausibly wrong.** A sign error puts
+a bracket through the extrusion it is bolted to and every number downstream
+still looks like a number, so a pose test asserts a position worked out by hand
+from the stubs - never whatever the code printed the first time. And a geometry
+test that skips on missing data passes by checking nothing; count what you
+checked and assert the count.
 
 There is no linter yet. When one is wanted it should be core ESLint with no
 plugins, for mechanica's stated reason: catch what a runtime would catch and

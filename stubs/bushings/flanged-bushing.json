@@ -1,0 +1,75 @@
+{
+  "id": "bushings/flanged-bushing",
+  "source": "mechanica",
+  "status": "exists",
+  "kind": "made",
+  "parameters": {
+    "bore": 5,
+    "outer_diameter": 8,
+    "length": 7
+  },
+  "designation": "5x8x7 flanged bushing",
+  "envelope": {
+    "min": [
+      -5,
+      -5,
+      0
+    ],
+    "max": [
+      5,
+      5,
+      7
+    ]
+  },
+  "mass": {
+    "volume_mm3": 260
+  },
+  "anchors": {
+    "bore": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "bore",
+        "diameter": 5,
+        "gender": "hole"
+      }
+    },
+    "outer": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "bore",
+        "diameter": 8,
+        "gender": "shaft"
+      }
+    }
+  }
+}

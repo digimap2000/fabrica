@@ -50,7 +50,8 @@ function describe(component, resolved) {
   return args ? `${leaf} (${args})` : leaf;
 }
 
-export function buildOrder(resolved) {
+export function buildOrder(resolved, routes = []) {
+  const cut = new Map(routes.map((r) => [r.name, r]));
   const steps = [];
   const ground = resolved.instances.get(resolved.ground);
 
@@ -89,10 +90,16 @@ export function buildOrder(resolved) {
   for (const route of resolved.routes) {
     const over = (route.over?.items ?? []).map((r) => nameOf(resolved.instances.get(r.instance)));
     const ends = (route.anchors?.items ?? []).map((r) => readable(r.anchor));
+    const measured = cut.get(route.name);
+    const tail = measured?.length == null
+      ? 'Its length is not derived, because not everything it runs over is placed.'
+      : `Cut it to ${measured.length.toFixed(1)} mm`
+        + (measured.teethEngaged?.every((t) => t)
+            ? `, with ${measured.teethEngaged.join(' and ')} teeth in mesh.`
+            : '.');
     steps.push({
       n: steps.length + 1,
-      text: `Run the ${route.of.id.split('/').pop()} over ${list(over)}, and clamp both ends at ${list(ends)}. `
-          + 'Cut it to the length the machine resolves to once poses are computed.',
+      text: `Run the ${route.of.id.split('/').pop()} over ${list(over)}, and clamp both ends at ${list(ends)}. ${tail}`,
       joint: null,
     });
   }

@@ -1,0 +1,12 @@
+{
+  "id": "hardware/cap-screw",
+  "source": "mechanica",
+  "status": "exists",
+  "kind": "made",
+  "parameters": {
+    "standard": "M5",
+    "length": 10
+  },
+  "designation": "M5x10 socket cap screw",
+  "anchors": {}
+}

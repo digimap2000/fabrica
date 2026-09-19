@@ -1,0 +1,11 @@
+{
+  "id": "hardware/hex-nut",
+  "source": "mechanica",
+  "status": "exists",
+  "kind": "made",
+  "parameters": {
+    "standard": "M3"
+  },
+  "designation": "M3 hex nut",
+  "anchors": {}
+}

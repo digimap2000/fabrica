@@ -1,0 +1,99 @@
+{
+  "id": "clamps/belt-clamp",
+  "source": "mechanica",
+  "status": "does-not-exist",
+  "kind": "made",
+  "parameters": {
+    "profile": "GT2 2 mm"
+  },
+  "designation": "GT2 belt clamp",
+  "envelope": {
+    "min": [
+      -16,
+      -6,
+      0
+    ],
+    "max": [
+      16,
+      6,
+      9
+    ]
+  },
+  "mass": {
+    "volume_mm3": 2400
+  },
+  "anchors": {
+    "carriage_face": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "rect_pattern",
+        "spacing": 20,
+        "holes": 2,
+        "screw": "M3",
+        "clock": 0,
+        "gender": "clearance"
+      }
+    },
+    "belt_a": {
+      "kind": "face",
+      "origin": [
+        -12,
+        0,
+        4.5
+      ],
+      "normal": [
+        -1,
+        0,
+        0
+      ],
+      "clock": [
+        0,
+        0,
+        1
+      ],
+      "interface": {
+        "archetype": "belt_end",
+        "profile": "GT2 2 mm",
+        "gender": "clamp"
+      }
+    },
+    "belt_b": {
+      "kind": "face",
+      "origin": [
+        12,
+        0,
+        4.5
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "clock": [
+        0,
+        0,
+        1
+      ],
+      "interface": {
+        "archetype": "belt_end",
+        "profile": "GT2 2 mm",
+        "gender": "clamp"
+      }
+    }
+  }
+}

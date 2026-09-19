@@ -1,0 +1,81 @@
+{
+  "id": "nema",
+  "source": "fabrica/stock",
+  "status": "exists",
+  "kind": "bought",
+  "parameters": {
+    "frame": "17",
+    "shaft": 5,
+    "body": 40
+  },
+  "designation": "NEMA 17 stepper, 40 mm body, 5 mm shaft",
+  "envelope": {
+    "min": [
+      -21.15,
+      -21.15,
+      -40
+    ],
+    "max": [
+      21.15,
+      21.15,
+      24
+    ]
+  },
+  "mass": {
+    "grams": 280
+  },
+  "anchors": {
+    "flange": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "rect_pattern",
+        "preset": "nema17_face",
+        "spacing": 31,
+        "holes": 4,
+        "screw": "M3",
+        "pilot": 22,
+        "clock": 45,
+        "gender": "tapped"
+      }
+    },
+    "shaft": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        24
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "shaft",
+        "diameter": 5,
+        "flat": true,
+        "gender": "shaft"
+      }
+    }
+  }
+}

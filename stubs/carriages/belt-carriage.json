@@ -1,0 +1,77 @@
+{
+  "id": "carriages/belt-carriage",
+  "source": "mechanica",
+  "status": "does-not-exist",
+  "kind": "made",
+  "parameters": {
+    "profile": "2020"
+  },
+  "designation": "2020 belt carriage",
+  "envelope": {
+    "min": [
+      -30,
+      -24,
+      0
+    ],
+    "max": [
+      30,
+      24,
+      18
+    ]
+  },
+  "mass": {
+    "volume_mm3": 21500
+  },
+  "anchors": {
+    "rail_face": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "t_slot",
+        "profile": "2020",
+        "width": 6,
+        "gender": "rider"
+      }
+    },
+    "belt_face": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        18
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "rect_pattern",
+        "spacing": 20,
+        "holes": 2,
+        "screw": "M3",
+        "clock": 0,
+        "gender": "clearance"
+      }
+    }
+  }
+}
