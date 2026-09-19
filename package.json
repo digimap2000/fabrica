@@ -1,0 +1,13 @@
+{
+  "name": "fabrica",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Parameterised machines assembled from mechanica parts and off-the-shelf hardware",
+  "bin": { "fabrica": "bin/fabrica.js" },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "stage": "node bin/fabrica.js machines/linear-stage.machine"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -56,7 +56,18 @@ before it is built. fabrica must never become a blocker on mechanica's MVP.
 
 ## Commands
 
-None yet — nothing is built. When there are, they belong here.
+Run from the repository root. Node 20 or later; no dependencies, no build step.
+
+```sh
+node bin/fabrica.js machines/linear-stage.machine     # BOM, print list, build order
+node bin/fabrica.js <machine> --set travel=500 --bom  # configure and narrow
+node bin/fabrica.js <machine> --json                  # for a caller, not a reader
+node --test tests/*.test.js                           # 22 tests, under a second
+```
+
+There is no linter yet. When one is wanted it should be core ESLint with no
+plugins, for mechanica's stated reason: catch what a runtime would catch and
+hold no opinion about how the code looks.
 
 ## Prose
 

@@ -10,9 +10,12 @@
 // cheapest possible test of whether joints, anchors and limits are the right
 // primitives. Three things it found, all recorded below where they bite:
 //
-//   1. Anchors come in two kinds. A motor face is a frame; an extrusion slot is
-//      a line you may clamp anywhere along. Those are not the same thing and
-//      one syntax for both would have been wrong.
+//   1. Anchors come in three kinds, not the one the design note assumed. A
+//      motor face is a frame; an extrusion slot is a line you may clamp
+//      anywhere along, so it carries a position; a pulley's pitch line is
+//      something a belt runs OVER rather than something that mates. One syntax
+//      for all three would have been wrong, and the third only appeared once
+//      the belt at the bottom of this file needed writing.
 //   2. A fastening is not a separate concept from the joint it realises. Every
 //      fixed joint already knows what holds it, so the screws live there - and
 //      the BOM and the build step fall out of the same declaration.
@@ -74,6 +77,15 @@
 
 stock beam   = <extrusion>(profile=rail_profile, length=travel + 120);
 stock motor  = <nema>(frame=motor_frame, shaft=5, body=40);
+
+// A wrinkle the resolver found rather than the file. 'stock' currently means
+// two things: a thing at a place, like the beam, and a thing you use some of,
+// like this. One declaration here becomes eight T-nuts, because two joints
+// consume four each - so counting the declaration as one item would be wrong in
+// the only place the number matters, which is what you have to buy. The
+// resolver recognises a consumable by its being named in a fastening's 'into'
+// and counts it by consumption. That works, and it is the wrong shape: the two
+// meanings want separating in the language, probably as 'consumable'.
 stock t_nut  = <t-nut>(profile=rail_profile, thread="M5");
 
 // --- what is made -----------------------------------------------------------
