@@ -65,8 +65,20 @@ node bin/fabrica.js <machine> --at carriage=300       # put a moving joint somew
 node bin/fabrica.js <machine> --set travel=500 --bom  # configure and narrow
 node bin/fabrica.js <machine> --json                  # for a caller, not a reader
 node bin/serve.js                                     # the viewer, on :8081
-node --test tests/*.test.js                           # 49 tests, under a second
+npm test                                              # offline, 49 tests
+npm run contract                                      # against a mechanica release
 ```
+
+**The two suites answer different questions and must stay apart.** `tests/` is
+offline and proves fabrica is self-consistent. `contract/` needs a running
+release and is the only thing that can tell you the service still answers the
+way this code expects - `MECHANICA_URL` points it elsewhere. Never make the
+offline suite reach the network: a green run would then mean two different
+things depending on who was listening.
+
+**A contract check must be seen to fail before it is trusted.** Break the thing
+it guards, watch it catch it, put it back. One that has never failed is a
+comment with a test runner around it.
 
 `src/` runs in **both** node and the browser, and must keep doing so. A module
 that imports `node:` anything cannot be imported by the viewer - which is why
