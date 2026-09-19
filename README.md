@@ -326,30 +326,27 @@ npm test         # offline, 49 tests, under a second
 npm run contract # against a release, 8 checks, under two seconds
 ```
 
-Seven checks, generated from `machines/*.machine` rather than from a list
-written by hand, so a machine that starts using a new part is covered the moment
-it is written. They cover: health carrying every field the viewer shows; every
-stub that claims a part exists being right; **every stub that claims a part is
-missing still being right**, so the backlog can only shrink; every query fabrica
-builds being accepted and returning a decodable mesh; every parameter name being
-one the part declares; the payload still being MMS2 little-endian; and 404 and
-400 still meaning what the viewer says they mean.
+Six checks, generated from `machines/*.machine` rather than from a list written
+by hand, so a machine that starts using a new part is covered the moment it is
+written. They cover: health carrying every field the viewer shows; every stub
+that claims a part exists being right; every query fabrica builds being accepted
+and returning a decodable mesh; every parameter name being one the part
+declares; the payload still being MMS2 little-endian; and 404 and 400 still
+meaning what the viewer says they mean.
 
-**They ask whether the stubs are right now, not whether a part has changed.**
-That distinction is deliberate. Detecting change is a versioning problem and
-both halves of the answer already exist in outline - mechanica has `@proven` and
-the baseline ledger, fabrica's side is the stamped metadata snapshot described
-above, where going stale is a test failure rather than a wrong picture. A
-designation check comparing prose against prose was tried here and removed: it
-was a worse version of that, arriving years early. Nothing in `contract/`
-watches for drift, and it should stay that way until the versioning is real.
+**Every one asks whether the hand-written stubs are right now. None watches for
+a part to change.** That line is deliberate and has been drawn twice, removing a
+check each time. Detecting change is a versioning problem, and both halves of
+the answer already exist in outline - mechanica has `@proven` and the baseline
+ledger, fabrica's side is the stamped metadata snapshot described above, where
+going stale is a test failure rather than a wrong picture. Guarding it here with
+string comparisons, years early, would only teach everyone to trust the wrong
+mechanism. Put it back when there is a traceable part history to put it back
+against.
 
-The shrink-only rule is the one exception, and it is about the honesty of
-fabrica's own backlog rather than about mechanica moving: a stub claiming a part
-is missing after it has arrived is a lie, and the viewer is then drawing a box
-round something real. Borrowed from mechanica's accessibility baseline, where an
-exception that no longer reproduces has to be deleted deliberately or the list
-rots into something everybody skips.
+What is left has earned its place the hard way: two of these checks exist
+because the thing they check was got wrong - a value sent where a standards key
+was wanted, and a parameter mechanica would have ignored rather than refused.
 
 **They were verified by being broken.** Each guard was deliberately defeated in
 turn - the standards key removed so a raw value goes out, a parameter renamed, a

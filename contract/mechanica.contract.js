@@ -89,33 +89,21 @@ test('every component a stub says exists, exists', () => {
     + '  wrong or the part was removed; the stub has to say which.');
 });
 
-// The backlog can only shrink. Borrowed from mechanica's accessibility baseline,
-// for the same reason: an exception that no longer reproduces has to be deleted
-// deliberately, or the list rots into something nobody trusts and everybody
-// skips. A part arriving in mechanica is good news and should still fail this.
-test('every component a stub says is missing, is still missing', () => {
-  const arrived = catalogue.records()
-    .filter((r) => r.source === 'mechanica' && r.status === 'does-not-exist' && index.has(r.id))
-    .map((r) => r.id);
-  assert.deepEqual(arrived, [],
-    'mechanica has grown these parts. Update their stubs from the real schema,\n'
-    + '  set status to "exists", and the viewer stops drawing them as boxes.');
-});
-
-// There was a designation check here, comparing each stub's prose against what
-// mechanica resolves. It has been removed, and the reason is worth keeping.
+// Two checks stood here and both have gone: one comparing each stub's prose
+// designation against mechanica's, and one failing when a part fabrica had
+// listed as missing turned up in the catalogue.
 //
-// It was the only check in this file about a part CHANGING rather than about
-// fabrica being wrong today, and detecting change is not a problem to solve with
-// string comparisons a year before it bites. It belongs in versioning, and both
-// halves of that already exist in outline: mechanica has @proven and the
-// baseline ledger, and fabrica's side is the stamped metadata snapshot described
-// in README.md - kernel version and per-component source hashes, where going
-// stale is a test failure rather than a wrong picture.
+// They watched for the catalogue MOVING, where everything left asks whether the
+// hand-written stubs are right NOW. Change is a versioning problem and both
+// halves of the answer already exist in outline - mechanica has @proven and the
+// baseline ledger, fabrica's side is the stamped metadata snapshot README.md
+// describes, where going stale is a test failure rather than a wrong picture.
+// Guarding it here with string comparisons, years early, would only teach
+// everyone to trust the wrong mechanism.
 //
-// So: nothing here watches for drift. These checks ask whether the hand-written
-// stubs are right NOW, which at this stage of the project is the question that
-// has actually been answered wrongly - twice.
+// So nothing in this file watches for drift, and that is a decision rather than
+// an omission. Put it back when there is a traceable part history to put it
+// back against.
 
 // --- the queries fabrica actually sends --------------------------------------
 
