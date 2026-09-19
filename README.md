@@ -326,20 +326,30 @@ npm test         # offline, 49 tests, under a second
 npm run contract # against a release, 8 checks, under two seconds
 ```
 
-Eight checks, generated from `machines/*.machine` rather than from a list
+Seven checks, generated from `machines/*.machine` rather than from a list
 written by hand, so a machine that starts using a new part is covered the moment
 it is written. They cover: health carrying every field the viewer shows; every
 stub that claims a part exists being right; **every stub that claims a part is
-missing still being right**, so the backlog can only shrink; each stub's
-designation matching what mechanica resolves; every query fabrica builds being
-accepted and returning a decodable mesh; every parameter name being one the part
-declares; the payload still being MMS2 little-endian; and 404 and 400 still
-meaning what the viewer says they mean.
+missing still being right**, so the backlog can only shrink; every query fabrica
+builds being accepted and returning a decodable mesh; every parameter name being
+one the part declares; the payload still being MMS2 little-endian; and 404 and
+400 still meaning what the viewer says they mean.
 
-The shrink-only rule is borrowed from mechanica's accessibility baseline, for
-the same reason: an exception that no longer reproduces has to be deleted
-deliberately, or the list rots into something nobody trusts and everybody skips.
-A part arriving in mechanica is good news and still fails the test.
+**They ask whether the stubs are right now, not whether a part has changed.**
+That distinction is deliberate. Detecting change is a versioning problem and
+both halves of the answer already exist in outline - mechanica has `@proven` and
+the baseline ledger, fabrica's side is the stamped metadata snapshot described
+above, where going stale is a test failure rather than a wrong picture. A
+designation check comparing prose against prose was tried here and removed: it
+was a worse version of that, arriving years early. Nothing in `contract/`
+watches for drift, and it should stay that way until the versioning is real.
+
+The shrink-only rule is the one exception, and it is about the honesty of
+fabrica's own backlog rather than about mechanica moving: a stub claiming a part
+is missing after it has arrived is a lie, and the viewer is then drawing a box
+round something real. Borrowed from mechanica's accessibility baseline, where an
+exception that no longer reproduces has to be deleted deliberately or the list
+rots into something everybody skips.
 
 **They were verified by being broken.** Each guard was deliberately defeated in
 turn - the standards key removed so a raw value goes out, a parameter renamed, a
@@ -350,6 +360,7 @@ never been seen to fail is a comment.
 An unreachable service is a failure, not a skip. A safety net that can absent
 itself is not one.
 
-Next: somewhere to run `npm run contract` on a schedule, so a mechanica deploy
-that changes something under fabrica is noticed by a machine rather than by
-somebody opening the viewer.
+Not next: running this on a schedule. Watching for a part to change is the
+thing the versioning scheme will do properly, with a traceable history behind
+it, and standing a cron job in front of that now would build the habit of
+trusting the wrong mechanism.

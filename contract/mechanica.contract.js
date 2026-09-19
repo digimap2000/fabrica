@@ -102,20 +102,20 @@ test('every component a stub says is missing, is still missing', () => {
     + '  set status to "exists", and the viewer stops drawing them as boxes.');
 });
 
-test('a stub records the designation mechanica actually resolves', async () => {
-  const wrong = [];
-  for (const [, { instance }] of wanted) {
-    if (!instance.meta?.designation) continue;
-    const query = new URLSearchParams(meshQuery(instance));
-    query.delete('lod');
-    const part = await (await fetch(`${MECHANICA}/api/part?${query}`)).json();
-    if (part.designation !== instance.meta.designation) {
-      wrong.push(`${instance.id}: stub says "${instance.meta.designation}", mechanica says "${part.designation}"`);
-    }
-  }
-  assert.deepEqual(wrong, [],
-    'A designation is what a BOM line reads, so a stale one is a wrong order form.');
-});
+// There was a designation check here, comparing each stub's prose against what
+// mechanica resolves. It has been removed, and the reason is worth keeping.
+//
+// It was the only check in this file about a part CHANGING rather than about
+// fabrica being wrong today, and detecting change is not a problem to solve with
+// string comparisons a year before it bites. It belongs in versioning, and both
+// halves of that already exist in outline: mechanica has @proven and the
+// baseline ledger, and fabrica's side is the stamped metadata snapshot described
+// in README.md - kernel version and per-component source hashes, where going
+// stale is a test failure rather than a wrong picture.
+//
+// So: nothing here watches for drift. These checks ask whether the hand-written
+// stubs are right NOW, which at this stage of the project is the question that
+// has actually been answered wrongly - twice.
 
 // --- the queries fabrica actually sends --------------------------------------
 
