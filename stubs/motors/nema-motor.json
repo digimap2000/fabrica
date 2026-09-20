@@ -6,7 +6,8 @@
   "parameters": {
     "frame": "17",
     "body_length": 48,
-    "shaft_length": 24
+    "shaft_length": 24,
+    "step_angle": 1.8
   },
   "designation": "NEMA 17 x 48 motor",
   "envelope": {
@@ -95,5 +96,6 @@
     }
   },
   "material": "steel",
-  "_anchors_follow": "coordinates written as a parameter name move when the part is configured; a constant there is a silent lie"
+  "_anchors_follow": "coordinates written as a parameter name move when the part is configured; a constant there is a silent lie",
+  "_step_angle": "degrees per full step. 1.8 is the usual NEMA 17; 0.9 doubles the resolution and halves the torque."
 }

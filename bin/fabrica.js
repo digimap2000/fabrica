@@ -17,6 +17,7 @@ import { billOfMaterials, printList } from '../src/bom.js';
 import { buildOrder } from '../src/build.js';
 import { extent, interference, poseTree, sweptExtent } from '../src/pose.js';
 import { resolveRoutes } from '../src/route.js';
+import { resolveDrives } from '../src/drive.js';
 
 const ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -149,6 +150,19 @@ function printRoutes(routes) {
   }
 }
 
+function printDrives(drives) {
+  const real = drives.filter((d) => d.perRevolution != null);
+  if (!real.length) return;
+  process.stdout.write('\nWHAT IT DOES WHEN YOU TURN IT\n');
+  for (const d of real) {
+    process.stdout.write(`  ${d.from} drives ${d.to} through the ${d.via}: `
+      + `${d.perRevolution.toFixed(2)} mm per revolution\n`);
+    if (!d.steps) continue;
+    process.stdout.write(`    ${d.teeth} teeth at ${d.stepAngle} deg/step, so `
+      + d.steps.map((s) => `${s.perMm.toFixed(1)} steps/mm at ${s.micro}x`).join(', ') + '\n');
+  }
+}
+
 function printDiagnostics(diagnostics) {
   if (!diagnostics.length) return;
   process.stdout.write('\nDIAGNOSTICS\n');
@@ -166,7 +180,8 @@ async function main() {
 
   const placed = poseTree(resolved, options.at);
   const routed = resolveRoutes(resolved, placed.poses);
-  resolved.diagnostics.push(...placed.diagnostics, ...routed.diagnostics);
+  const driven = resolveDrives(resolved, placed.poses);
+  resolved.diagnostics.push(...placed.diagnostics, ...routed.diagnostics, ...driven.diagnostics);
 
   const bom = billOfMaterials(resolved, routed.routes);
   const steps = buildOrder(resolved, routed.routes);
@@ -183,6 +198,7 @@ async function main() {
       steps: steps.map(({ n, text: t }) => ({ n, text: t })),
       poses: Object.fromEntries([...placed.poses].map(([n, m]) => [n, m])),
       routes: routed.routes,
+      drives: driven.drives,
       extent: box,
       swept: swept?.box ?? null,
       clashes,
@@ -203,7 +219,7 @@ async function main() {
   } else {
     if (options.only !== 'build') printBom(bom);
     if (options.only !== 'bom') printSteps(steps);
-    if (!options.only) { printRoutes(routed.routes); printSpace(box, swept, clashes); }
+    if (!options.only) { printRoutes(routed.routes); printDrives(driven.drives); printSpace(box, swept, clashes); }
   }
   printDiagnostics(resolved.diagnostics);
   process.stdout.write('\n');

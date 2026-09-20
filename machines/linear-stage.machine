@@ -71,7 +71,8 @@
 // inside the carriage because it is a property of putting the two together.
 
 stock beam  = <extrusions/t-slot-extrusion>(extrusion=profile, length=travel + 150);
-stock motor = <motors/nema-motor>(frame=frame, body_length=48, shaft_length=24);
+stock motor = <motors/nema-motor>(frame=frame, body_length=48, shaft_length=24,
+                                  step_angle=1.8);
 
 // The rod the idler shaft clamps. mechanica draws it as hardware inside that
 // part and fabrica does not render another part's hardware, so without this line
@@ -229,4 +230,10 @@ route belt = <synchronous-belt>(profile=belt_profile) {
     anchors = [clamp.belt_a, clamp.belt_b];
 }
 
+// What turning the motor does to the carriage, and it is not decoration: the
+// belt is a loop round two pulleys and the carriage is clamped to BOTH its cut
+// ends, so the carriage is a break in one run. Winding belt onto one side and
+// off the other moves the break. One turn of the drive pulley therefore moves
+// the carriage by its pitch circle's circumference - teeth times pitch, and
+// nothing to do with the pulley's outside diameter.
 drive motor -> carriage via belt;

@@ -19,6 +19,7 @@ import { catalogueFrom } from '../src/catalogue.js';
 import { resolve, ERROR } from '../src/resolve.js';
 import { poseTree, extent, interference, anchorInWorld, envelopeOf } from '../src/pose.js';
 import { resolveRoutes } from '../src/route.js';
+import { resolveDrives } from '../src/drive.js';
 import { billOfMaterials } from '../src/bom.js';
 import { fetchMesh, meshQuery, health } from '../src/mechanica.js';
 
@@ -232,6 +233,7 @@ async function render() {
   const resolved = resolve(machine, catalogue, parameters);
   const placed = poseTree(resolved, jointValues);
   const routed = resolveRoutes(resolved, placed.poses);
+  const driven = resolveDrives(resolved, placed.poses);
   const bom = billOfMaterials(resolved, routed.routes);
 
   el('designation').textContent = resolved.designation ?? '';
@@ -296,7 +298,7 @@ async function render() {
 
   showParameters(resolved);
   showJoints(placed);
-  showDerived(resolved, placed, routed);
+  showDerived(resolved, placed, routed, driven);
   showLegend(shown, [...resolved.instances.values()].some((i) => i.meta?.status === 'does-not-exist'));
   showBom(bom, notes);
 
@@ -423,7 +425,7 @@ function showJoints(placed) {
   }
 }
 
-function showDerived(resolved, placed, routed) {
+function showDerived(resolved, placed, routed, driven) {
   const host = el('derived');
   host.textContent = '';
   const row = (term, value, warn = false) => {
@@ -446,6 +448,12 @@ function showDerived(resolved, placed, routed) {
     if (route.clearance != null) {
       row('  clearance', `${route.clearance.toFixed(1)} mm to ${route.nearest}`, route.clearance < 2);
     }
+  }
+  for (const d of driven?.drives ?? []) {
+    if (d.perRevolution == null) continue;
+    row('Per turn', `${d.perRevolution.toFixed(1)} mm`);
+    const sixteen = d.steps?.find((s) => s.micro === 16);
+    if (sixteen) row('Steps/mm', `${sixteen.perMm.toFixed(1)} at 16x`);
   }
   const clashes = interference(resolved, placed.poses);
   row('Clashes', clashes.length
