@@ -169,14 +169,20 @@ async function render() {
   // own gallery by baking previews; fabrica will want the equivalent, and until
   // then it can at least admit what it is doing.
   const building = [...resolved.instances.values()]
-    .filter((i) => i.kind === 'part' && meshQuery(i) && !meshes.has(meshQuery(i)));
+    .filter((i) => meshQuery(i) && !meshes.has(meshQuery(i)));
   if (building.length) say(`Building ${building.length} part${building.length > 1 ? 's' : ''} on mechanica…`);
 
   await Promise.all([...resolved.instances].map(async ([name, instance]) => {
     const pose = placed.poses.get(name);
     if (!pose) return;
 
-    const built = instance.kind === 'part' ? await geometryFor(instance) : null;
+    // Made and bought is a BOM distinction - who prints it, who buys it - and
+    // says nothing about who holds the geometry. mechanica models a T-slot
+    // extrusion and a NEMA motor precisely so that a part can show what it
+    // bolts to, and both of those are bought. Anything with a bridge gets
+    // asked; gating this on 'part' drew them as boxes with their meshes one
+    // request away.
+    const built = await geometryFor(instance);
     const node = new THREE.Group();
     node.matrixAutoUpdate = false;
     node.matrix.copy(matrixOf(pose));
@@ -186,7 +192,9 @@ async function render() {
       if (built.edges) node.add(new THREE.LineSegments(built.edges, EDGE));
     } else {
       if (built?.error) notes.set(instance.id, built.error);
-      const box = boxFor(instance.meta?.envelope, instance.kind === 'part');
+      // Orange means mechanica has no geometry for this, which is a question
+      // about the component's status and not about who pays for it.
+      const box = boxFor(instance.meta?.envelope, instance.meta?.status === 'does-not-exist');
       if (box) node.add(box);
     }
     assembly.add(node);

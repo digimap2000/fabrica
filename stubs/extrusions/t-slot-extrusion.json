@@ -1,0 +1,82 @@
+{
+  "id": "extrusions/t-slot-extrusion",
+  "source": "mechanica",
+  "status": "exists",
+  "kind": "bought",
+  "parameters": {
+    "extrusion": "2020",
+    "length": 200
+  },
+  "designation": "2020 extrusion",
+  "envelope": {
+    "min": [
+      -10,
+      -10,
+      0
+    ],
+    "max": [
+      10,
+      10,
+      200
+    ]
+  },
+  "_measured": "runs along its own +z from 0 to length, 20 square centred on x and y",
+  "_limit": "mechanica caps length at 300 mm; a 300 mm-travel stage needs 420",
+  "anchors": {
+    "end_a": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        -1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "extrusion_end",
+        "profile": "2020",
+        "gender": "spigot"
+      }
+    },
+    "end_b": {
+      "kind": "face",
+      "origin": [
+        0,
+        0,
+        200
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "extrusion_end",
+        "profile": "2020",
+        "gender": "spigot"
+      }
+    }
+  },
+  "mechanica": {
+    "id": "extrusions/t-slot-extrusion",
+    "map": {
+      "extrusion": {
+        "2020": "t_slot_extrusion:2020",
+        "2040": "t_slot_extrusion:2040"
+      }
+    }
+  }
+}

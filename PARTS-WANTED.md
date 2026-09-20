@@ -13,6 +13,12 @@ two agree rather than nearly agreeing.
 
 Read `authoring-a-part` before starting. Everything below assumes it.
 
+**Status, 2026-09-20.** mechanica has answered part of this and answered it
+better than it was asked. T-slot extrusion, NEMA frames, a motor, a T-slot nut,
+an end cap, an end flange and a NEMA L bracket all exist at kernel 14 and are
+deployed. **Part 1 below is withdrawn** - see the note in its place. Parts 2, 3
+and 4 stand, and the prerequisite table is done.
+
 ---
 
 ## Read this first: the stage's belt plane is wrong
@@ -103,7 +109,34 @@ wrong, and the clearances are the interesting part.
 
 ---
 
-## 1. `brackets/motor-mount`
+## 1. `brackets/motor-mount` - WITHDRAWN
+
+I asked for a plate that bolts to a T-slot beam and carries a stepper. mechanica
+built something better and the request should not survive it.
+
+What I specified was one part that knew about both a T-slot profile and a NEMA
+frame. That is one of n times m parts, and the second one written is already a
+worse idea than the first. What exists instead is a hub: `extrusions/end-flange`
+turns the end of any profile into a bolt circle, and `brackets/nema-l-bracket`
+takes a bolt circle on one leg and a NEMA frame on the other. Neither has heard
+of the other. Four holes on a 44 pitch circle **is** a NEMA 17 mount and the
+catalogue never has to know it.
+
+`machines/flange-end.machine` is the proof and exists for no other reason. It
+assembles true: every joint closes to a gap of 0.000 mm with normals exactly
+opposed, and the motor shaft lands 0.000 mm off the bracket's bore axis.
+
+The convention that makes it work is the flange bolt circle at **45, 135, 225
+and 315** rather than on the axes, and it is stated in mechanica as the
+catalogue's convention rather than one part's preference. That is the clocking
+trap this repository's README warns about, met and caught with a protractor -
+two parts agreeing on hole count and pitch circle and still not going together,
+both building clean, neither wrong on its own.
+
+Everything below is left as written, because what it got wrong is the
+interesting part.
+
+### The original request, superseded
 
 A plate that bolts to a T-slot beam and carries a stepper with its shaft across
 the beam, on the centre plane, at a chosen height - so a pulley on that shaft
@@ -251,6 +284,33 @@ plane, separated by `spacing` along travel. That is the whole correction at the
 top of this document, expressed as two coordinates.
 
 ---
+
+## Found while wiring the new parts up
+
+Two things for mechanica, and one that was fabrica's own fault.
+
+**`extrusions/t-slot-extrusion` caps `length` at 300 mm.** A 300 mm-travel stage
+needs a 420 mm beam, so the machine this whole document serves cannot be drawn.
+Worth raising on mechanica's own terms rather than fabrica's: extrusion is sold
+by the metre, and a model of stock that cannot represent a metre of it cannot
+show what most parts actually bolt to. `flange-end.machine` is limited to 300 mm
+because of it, and says so in its parameter's `convention`.
+
+**Anchors are no longer a nice-to-have, and they need to be functions of
+parameters.** Six frames were reverse-engineered for this session by fetching
+each part's mesh, varying one parameter at a time and watching which dimension
+of the bounding box moved. That works and it is absurd. Worse, it cannot express
+what is actually true: the extrusion's far end is at `length`, so its anchor
+moves when the part is configured. The stub pins it at 200 mm and is simply
+wrong at any other length. A published anchor has to carry an expression, not a
+constant.
+
+**fabrica was drawing geometry it already had.** The viewer asked mechanica for
+a mesh only when a component was `part` - made. But made-and-bought is a bill of
+materials distinction, about who prints a thing and who buys it, and says
+nothing about who holds its geometry. mechanica models an extrusion and a motor
+precisely so a part can show what it bolts to, and both are bought. Fixed: a
+component is asked for whenever it carries a bridge.
 
 ## What happens next
 

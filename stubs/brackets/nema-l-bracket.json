@@ -1,0 +1,93 @@
+{
+  "id": "brackets/nema-l-bracket",
+  "source": "mechanica",
+  "status": "exists",
+  "kind": "made",
+  "parameters": {
+    "frame": "17",
+    "holes": 4,
+    "hole_circle": 44,
+    "hole": 3.4,
+    "width": 60,
+    "flange_leg": 60,
+    "motor_leg": 50
+  },
+  "designation": "NEMA 17 L bracket",
+  "envelope": {
+    "min": [
+      0,
+      0,
+      0
+    ],
+    "max": [
+      60,
+      50,
+      60
+    ]
+  },
+  "anchors": {
+    "flange_face": {
+      "kind": "face",
+      "origin": [
+        30,
+        0,
+        30
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "bolt_circle",
+        "holes": 4,
+        "circle": 44,
+        "hole": 3.4,
+        "clock": 45,
+        "gender": "clearance"
+      }
+    },
+    "motor_face": {
+      "kind": "face",
+      "origin": [
+        0,
+        25,
+        30
+      ],
+      "normal": [
+        -1,
+        0,
+        0
+      ],
+      "clock": [
+        0,
+        0,
+        1
+      ],
+      "interface": {
+        "archetype": "rect_pattern",
+        "preset": "nema17_face",
+        "spacing": 31,
+        "holes": 4,
+        "screw": "M3",
+        "pilot": 22,
+        "clock": 45,
+        "gender": "clearance"
+      }
+    }
+  },
+  "mechanica": {
+    "id": "brackets/nema-l-bracket",
+    "map": {
+      "frame": {
+        "17": "nema_frame:17",
+        "23": "nema_frame:23"
+      }
+    }
+  }
+}

@@ -1,36 +1,34 @@
 {
-  "id": "nema",
-  "source": "fabrica/stock",
+  "id": "motors/nema-motor",
+  "source": "mechanica",
   "status": "exists",
   "kind": "bought",
   "parameters": {
     "frame": "17",
-    "shaft": 5,
-    "body": 40
+    "body_length": 48,
+    "shaft_length": 24
   },
-  "designation": "NEMA 17 stepper, 40 mm body, 5 mm shaft",
+  "designation": "NEMA 17 x 48 motor",
   "envelope": {
     "min": [
       -21.15,
       -21.15,
-      -40
+      0
     ],
     "max": [
       21.15,
       21.15,
-      24
+      72
     ]
   },
-  "mass": {
-    "grams": 280
-  },
+  "_measured": "body from 0 to body_length, shaft on beyond it to body+shaft; the mounting face is at body_length",
   "anchors": {
     "flange": {
       "kind": "face",
       "origin": [
         0,
         0,
-        0
+        48
       ],
       "normal": [
         0,
@@ -58,7 +56,7 @@
       "origin": [
         0,
         0,
-        24
+        72
       ],
       "normal": [
         0,
@@ -73,10 +71,17 @@
       "interface": {
         "archetype": "shaft",
         "diameter": 5,
-        "flat": true,
         "gender": "shaft"
       }
     }
   },
-  "_note": "Kept although mechanica now models motors/nema-motor, because machines/linear-stage.machine still refers to this one and has not been rewired yet - it has a belt-plane fault to fix at the same time. When that machine moves to the mechanica part, delete this."
+  "mechanica": {
+    "id": "motors/nema-motor",
+    "map": {
+      "frame": {
+        "17": "nema_frame:17",
+        "23": "nema_frame:23"
+      }
+    }
+  }
 }

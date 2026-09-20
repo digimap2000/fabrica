@@ -1,0 +1,73 @@
+// A motor on the end of an extrusion, and nothing else.
+//
+// Four parts, one of which is a hub. It exists to test the arrangement
+// mechanica arrived at rather than to be a machine: a beam, a flange that
+// swallows its end and turns it into a bolt circle, an L bracket that takes
+// that bolt circle on one leg and a NEMA frame on the other, and a motor.
+//
+// The point is what the middle two do NOT know about each other. The flange has
+// never heard of NEMA and the bracket has never heard of T-slot; they agree on
+// three numbers - hole count, pitch circle, hole size - and that is the whole
+// interface. Every standard against every profile would have been n times m
+// parts, and this is two.
+//
+// It is also the smallest thing that can tell whether the flange convention
+// really holds. Both faces put their holes at 45, 135, 225 and 315 rather than
+// on the axes, and a pair that disagreed about that would build perfectly,
+// look right, and not go together - which is exactly what happened once in
+// mechanica and was caught with a protractor. Here it shows up as a bracket
+// rotated an eighth of a turn, in the viewer, for nothing.
+
+@proven 1;
+@machine "NEMA {frame} on a {profile} end flange";
+
+@parameter profile: standard {
+    label   = "Extrusion";
+    aspect  = form;
+    family  = t_slot_extrusion;
+    default = "2020";
+    summary = "The beam the motor hangs off";
+}
+
+@parameter frame: standard {
+    label   = "Motor";
+    aspect  = form;
+    family  = nema_frame;
+    default = "17";
+    summary = "The stepper frame size";
+}
+
+@parameter beam_length: length {
+    label   = "Beam";
+    aspect  = size;
+    min     = 60;
+    max     = 300;
+    default = 200;
+    summary = "How long a piece of extrusion";
+    convention = "mechanica models extrusion up to 300 mm. Stock is sold in metres, so this is a limit of the model rather than of the thing.";
+}
+
+stock beam = <extrusions/t-slot-extrusion>(extrusion=profile, length=beam_length);
+stock motor = <motors/nema-motor>(frame=frame, body_length=48, shaft_length=24);
+
+part flange  = <extrusions/end-flange>(extrusion=profile, flange_size=60, flange_thickness=6,
+                                       socket_depth=25, holes=4, hole_circle=44, hole=3.4);
+part bracket = <brackets/nema-l-bracket>(frame=frame, holes=4, hole_circle=44, hole=3.4,
+                                         width=60, flange_leg=60, motor_leg=50);
+
+ground beam;
+
+// The flange swallows the beam's end: the cut end lands on the socket floor,
+// which is why the socket anchor sits at the flange's thickness and not at its
+// mouth.
+joint fixed beam.end_a -> flange.socket;
+
+// The hub joint. Both sides are a bolt circle and neither knows what the other
+// is bolted to.
+joint fixed flange.flange -> bracket.flange_face {
+    fasten = <hardware/cap-screw>(standard="M5", length=16) x4;
+}
+
+joint fixed bracket.motor_face -> motor.flange {
+    fasten = <hardware/cap-screw>(standard="M3", length=10) x4;
+}
