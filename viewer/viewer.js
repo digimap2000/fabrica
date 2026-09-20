@@ -57,8 +57,46 @@ const key = new THREE.DirectionalLight(0xffffff, 1.5);
 key.position.set(1, -1.4, 1.6);
 scene.add(key);
 
-const MADE = new THREE.MeshStandardMaterial({ color: 0x7fb2e8, roughness: 0.55, metalness: 0.1, flatShading: false });
-const EDGE = new THREE.LineBasicMaterial({ color: 0x25405c });
+// What things are made of.
+//
+// fabrica's own, not mechanica's. The only material in that payload belongs to
+// HARDWARE - the fastener a part is drawn around - and a part's own body has
+// none, correctly: what a printed part is made of is the printer's business and
+// what a bought one is made of is the supplier's. Both are fabrica's to know,
+// and both are in the stubs.
+//
+// The names match mechanica's where they overlap, because two vocabularies for
+// the same metal is how they drift apart.
+const MATERIALS = {
+  aluminium: { color: 0xb9c0c8, metalness: 0.80, roughness: 0.34 },
+  steel:     { color: 0x8a9099, metalness: 0.88, roughness: 0.30 },
+  brass:     { color: 0xc2a044, metalness: 0.85, roughness: 0.32 },
+  rubber:    { color: 0x2c2e33, metalness: 0.00, roughness: 0.92 },
+  printed:   { color: 0x7fb2e8, metalness: 0.04, roughness: 0.62 },
+};
+const UNKNOWN = { color: 0x9aa1ab, metalness: 0.2, roughness: 0.7 };
+
+const surfaces = new Map();
+function surfaceFor(name) {
+  const key = name ?? 'printed';
+  if (!surfaces.has(key)) {
+    surfaces.set(key, new THREE.MeshStandardMaterial({ ...(MATERIALS[key] ?? UNKNOWN), flatShading: false }));
+  }
+  return surfaces.get(key);
+}
+
+// A feature edge reads as a darker version of what it is drawn on rather than
+// as one colour over everything, or steel gets blue creases.
+const edges = new Map();
+function edgeFor(name) {
+  const key = name ?? 'printed';
+  if (!edges.has(key)) {
+    const base = new THREE.Color((MATERIALS[key] ?? UNKNOWN).color);
+    edges.set(key, new THREE.LineBasicMaterial({ color: base.multiplyScalar(0.45) }));
+  }
+  return edges.get(key);
+}
+
 const BOXED = new THREE.LineBasicMaterial({ color: 0x6d7480 });
 const BOXED_ABSENT = new THREE.LineBasicMaterial({ color: 0xd59356 });
 
@@ -161,6 +199,7 @@ async function render() {
 
   assembly.clear();
   const notes = new Map();
+  const shown = new Map();          // material -> how many parts are wearing it
 
   // The first load asks mechanica to model every made part from scratch, and
   // OCCT serialises that behind one lock - so several seconds of apparently
@@ -188,8 +227,10 @@ async function render() {
     node.matrix.copy(matrixOf(pose));
 
     if (built && !built.error) {
-      node.add(new THREE.Mesh(built.solid, MADE));
-      if (built.edges) node.add(new THREE.LineSegments(built.edges, EDGE));
+      const material = instance.meta?.material;
+      shown.set(material ?? 'printed', (shown.get(material ?? 'printed') ?? 0) + 1);
+      node.add(new THREE.Mesh(built.solid, surfaceFor(material)));
+      if (built.edges) node.add(new THREE.LineSegments(built.edges, edgeFor(material)));
     } else {
       if (built?.error) notes.set(instance.id, built.error);
       // Orange means mechanica has no geometry for this, which is a question
@@ -203,6 +244,7 @@ async function render() {
   showParameters(resolved);
   showJoints(placed);
   showDerived(resolved, placed, routed);
+  showLegend(shown, [...resolved.instances.values()].some((i) => i.meta?.status === 'does-not-exist'));
   showBom(bom, notes);
 
   const errors = resolved.diagnostics.concat(placed.diagnostics, routed.diagnostics)
@@ -351,6 +393,26 @@ function showDerived(resolved, placed, routed) {
   const clashes = interference(resolved, placed.poses);
   row('Clashes', clashes.length ? clashes.map((c) => `${c.a}/${c.b}`).join(', ') : 'none', clashes.length > 0);
   frameOnce(resolved, placed);
+}
+
+// Built from what is actually on screen rather than written in the markup, so
+// it cannot describe a material no part is wearing.
+function showLegend(shown, anyAbsent) {
+  const host = el('legend');
+  host.textContent = '';
+  const row = (swatch, text) => {
+    const p = document.createElement('p');
+    const s = document.createElement('span');
+    s.className = 'swatch';
+    if (swatch === null) s.classList.add('boxed');
+    else if (swatch === 'absent') s.classList.add('absent');
+    else s.style.background = '#' + new THREE.Color((MATERIALS[swatch] ?? UNKNOWN).color).getHexString();
+    p.append(s, document.createTextNode(text));
+    host.append(p);
+  };
+  for (const [material, count] of [...shown].sort()) row(material, `${material} (${count})`);
+  row(null, 'bought, drawn as its envelope');
+  if (anyAbsent) row('absent', 'not in mechanica yet');
 }
 
 function showBom(bom, notes) {

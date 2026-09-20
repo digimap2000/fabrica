@@ -84,5 +84,6 @@
         "2020": "t_slot_extrusion:2020"
       }
     }
-  }
+  },
+  "material": "printed"
 }

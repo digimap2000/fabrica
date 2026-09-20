@@ -69,9 +69,12 @@ dl#derived dd { font-size: var(--fs-secondary); font-variant-numeric: tabular-nu
 dl#derived dd.warn { color: var(--caution); }
 
 #legend p { display: flex; align-items: center; gap: 7px; font-size: var(--fs-label); color: var(--text-dim); margin-bottom: 5px; }
+/* A material's swatch is set from the palette the renderer uses, so the two
+   cannot disagree about what brass looks like. Only the two wireframe cases,
+   which are not materials at all, are described here. */
 .swatch { width: 11px; height: 11px; border-radius: 2px; flex: 0 0 auto; }
-.swatch.made { background: var(--made); }
 .swatch.boxed { background: transparent; border: 1px solid var(--boxed); }
+.swatch.absent { background: transparent; border: 1px solid var(--caution); }
 
 #bom { margin-top: 10px; display: grid; gap: 3px; }
 #bom .line { display: flex; gap: 8px; font-size: var(--fs-label); align-items: baseline; }

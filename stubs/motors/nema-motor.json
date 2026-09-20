@@ -93,5 +93,6 @@
         "23": "nema_frame:23"
       }
     }
-  }
+  },
+  "material": "steel"
 }

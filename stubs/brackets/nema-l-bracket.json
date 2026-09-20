@@ -10,7 +10,7 @@
     "hole": 3.4,
     "width": 60,
     "flange_leg": 60,
-    "motor_leg": 50
+    "motor_leg": 70
   },
   "designation": "NEMA 17 L bracket",
   "envelope": {
@@ -21,7 +21,7 @@
     ],
     "max": [
       60,
-      50,
+      70,
       60
     ]
   },
@@ -79,6 +79,36 @@
         "clock": 45,
         "gender": "clearance"
       }
+    },
+    "motor_face_reverse": {
+      "kind": "face",
+      "origin": [
+        6,
+        35,
+        30
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "clock": [
+        0,
+        0,
+        1
+      ],
+      "_wanted": "the INSIDE face of the motor leg, so the motor body sits over the L rather than hanging off it. The shaft still emerges on the same side, so the belt is unaffected. Measured clear at motor_leg=70 with the gusset untouched, and at 60 with the gusset at 6 or less; at the default 50 the motor is inside the bracket at every gusset.",
+      "_pinned": "origin is [thickness, motor_leg/2, width/2]; the middle term needs arithmetic an anchor cannot yet carry, so it is pinned to motor_leg=70",
+      "interface": {
+        "archetype": "rect_pattern",
+        "preset": "nema17_face",
+        "spacing": 31,
+        "holes": 4,
+        "screw": "M3",
+        "pilot": 22,
+        "clock": 45,
+        "gender": "clearance"
+      }
     }
   },
   "mechanica": {
@@ -89,5 +119,6 @@
         "23": "nema_frame:23"
       }
     }
-  }
+  },
+  "material": "printed"
 }

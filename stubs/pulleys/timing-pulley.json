@@ -80,5 +80,6 @@
         "GT2 2 mm": "belt_profile:gt2_2"
       }
     }
-  }
+  },
+  "material": "printed"
 }

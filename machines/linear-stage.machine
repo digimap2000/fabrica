@@ -88,8 +88,14 @@ part motor_flange = <extrusions/end-flange>(extrusion=profile, flange_size=60, f
 part idler_flange = <extrusions/end-flange>(extrusion=profile, flange_size=60, flange_thickness=6,
                                             socket_depth=25, holes=4, hole_circle=44, hole=3.4);
 
+// The motor leg is 70 rather than the part's default 50, and that is what buys
+// room to hang the motor off the INSIDE of the leg instead of the outside - so
+// its body sits over the bracket rather than out in space. Measured rather than
+// guessed: at 50 the motor is inside the bracket whatever the gusset, at 60 it
+// clears with the gusset at 6 or less, and at 70 it clears with the gusset
+// untouched. So this needs no change to the part at all, only configuring.
 part motor_bracket = <brackets/nema-l-bracket>(frame=frame, holes=4, hole_circle=44, hole=3.4,
-                                               width=60, flange_leg=60, motor_leg=50);
+                                               width=60, flange_leg=60, motor_leg=70);
 part idler_bracket = <brackets/idler-l-bracket>(holes=4, hole_circle=44, hole=3.4,
                                                 width=60, flange_leg=60, spindle_leg=50,
                                                 spindle=5, spindle_length=24);   // TODO(mechanica)
@@ -98,7 +104,14 @@ part drive_pulley = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore
 part idler_pulley = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=5);
 part idler_bush   = <bushings/flanged-bushing>(bore=5, outer_diameter=8, length=7);
 
-part carriage = <carriages/belt-carriage>(profile=profile, length=60, height=8);   // TODO(mechanica)
+// 7, and the motor's reverse mount is what settled it. I assumed going round
+// the inside of the bracket would push the shaft further out and raised this to
+// 18; fabrica answered that the clamp was now 11 mm PAST the belt. The reverse
+// mount brings the belt 1 mm nearer, not further, because the face it hangs off
+// is a leg thickness in from the outer one. So the carriage stands off 7 rather
+// than the 8 it did before, and the assumption is recorded because it was the
+// wrong way round rather than merely out.
+part carriage = <carriages/belt-carriage>(profile=profile, length=60, height=7);   // TODO(mechanica)
 // Two numbers here are settled by the belt rather than chosen. reach is the
 // pitch radius, because the runs are one radius either side of the pulley axis.
 // groove is how far the grip line stands off the carriage, and it has to reach
@@ -126,7 +139,7 @@ joint fixed motor_flange.flange -> motor_bracket.flange_face {
     clock  = 0;
     fasten = <hardware/cap-screw>(standard="M5", length=16) x4;
 }
-joint fixed motor_bracket.motor_face -> motor.flange {
+joint fixed motor_bracket.motor_face_reverse -> motor.flange {
     fasten = <hardware/cap-screw>(standard="M3", length=10) x4;
 }
 
@@ -144,12 +157,14 @@ joint fixed idler_flange.flange -> idler_bracket.flange_face {
     fasten = <hardware/cap-screw>(standard="M5", length=16) x4;
 }
 
-// 3 rather than the motor's 8, and the difference is the whole lesson. The
+// 2 rather than the motor's 8, and the difference is the whole lesson. The
 // drive pulley hangs off a shaft and the idler sits on a spindle, so the two
-// stack in OPPOSITE directions - equal positions put the pitch circles 5 mm
-// apart, which is a belt that climbs its flange and shreds. fabrica fails the
-// build when they are not coplanar, and this is the number that satisfies it.
-joint fixed    idler_bracket.spindle@3 -> idler_bush.bore;
+// stack in OPPOSITE directions and equal positions do not make them coplanar.
+// It was 3 while the motor hung off the outside of its leg and is 2 now that it
+// hangs off the inside, which is a mechanical consequence of a change made for
+// an entirely different reason - and fabrica named it as 1.0 mm apart rather
+// than letting a belt ship that climbs its flange.
+joint fixed    idler_bracket.spindle@2 -> idler_bush.bore;
 joint revolute idler_bush.outer        -> idler_pulley.bore {
     axis = [0, 0, 1];
 }

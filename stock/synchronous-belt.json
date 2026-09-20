@@ -8,5 +8,6 @@
   },
   "designation": "GT2 2 mm open belt, 6 mm wide",
   "supplier_note": "Sold by the metre. The resolved length is a cut length, not a stock size.",
-  "anchors": {}
+  "anchors": {},
+  "material": "rubber"
 }

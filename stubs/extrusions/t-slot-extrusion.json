@@ -209,5 +209,6 @@
         "2040": "t_slot_extrusion:2040"
       }
     }
-  }
+  },
+  "material": "aluminium"
 }

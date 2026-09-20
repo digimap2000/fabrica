@@ -69,7 +69,13 @@ test('ground is the origin and everything is placed from it', () => {
 test('the flange chain lands where the flange thickness says it does', () => {
   const { poses } = poseTree(stage());
   assert.ok(near(at('motor_flange', poses), [0, 0, -6]), JSON.stringify(at('motor_flange', poses)));
-  assert.ok(near(at('drive_pulley', poses), [-22, 0, -31]), JSON.stringify(at('drive_pulley', poses)));
+  assert.ok(near(at('drive_pulley', poses), [-32, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
+
+  // The motor hangs off the INSIDE of its leg, so its body sits over the
+  // bracket at +x rather than out in space at -x, while the shaft still comes
+  // out on the belt side. That is the whole point of the reverse mount.
+  assert.ok(at('motor', poses)[0] > 0, 'motor body on the far side of the leg');
+  assert.ok(at('drive_pulley', poses)[0] < 0, 'and the pulley still on the belt side');
 });
 
 // The mating rule, asserted directly rather than through a position: two faces
@@ -101,7 +107,7 @@ test('joined faces have opposed normals and touch at a point', () => {
 // puts the pulley at -22.
 test('a pinned track puts the child that far along it', () => {
   const { poses } = poseTree(stage());
-  assert.ok(near(at('drive_pulley', poses), [-22, 0, -31]), JSON.stringify(at('drive_pulley', poses)));
+  assert.ok(near(at('drive_pulley', poses), [-32, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
 });
 
 // --- the joint that moves ---------------------------------------------------
@@ -125,38 +131,37 @@ test('a joint variable defaults to its home', () => {
 
 // --- the belt ---------------------------------------------------------------
 
-// Worked by hand: two 20-tooth GT2 pulleys, pitch diameter 12.73, at 312 mm
-// centres - the 250 mm beam plus 31 mm of flange and bracket at each end. A
-// closed loop is 2 x 312 + pi x 12.73 = 663.99; the belt is cut between clamps
-// 24 mm apart, so 640.0.
+// Worked by hand: two 20-tooth GT2 pulleys, pitch diameter 12.73, at 322 mm
+// centres. A closed loop is 2 x 322 + pi x 12.73 = 683.99; the belt is cut
+// between clamps 24 mm apart, so 660.0.
 test('the belt length is derived, and it is the one worked out by hand', () => {
   const r = stage();
   const { routes } = resolveRoutes(r, poseTree(r).poses);
   assert.equal(routes.length, 1);
-  assert.ok(close(routes[0].length, 640.0, 0.05), String(routes[0].length));
-  assert.ok(close(routes[0].centres, 312, 1e-9));
+  assert.ok(close(routes[0].length, 660.0, 0.05), String(routes[0].length));
+  assert.ok(close(routes[0].centres, 322, 1e-9));
   assert.deepEqual(routes[0].teethEngaged, [10, 10], 'half of a 20-tooth pulley');
 });
 
 test('the belt follows the travel, because the idler does', () => {
   const r = stage({ travel: 150 });
   const { routes } = resolveRoutes(r, poseTree(r).poses);
-  assert.ok(close(routes[0].length, 740.0, 0.05), String(routes[0].length));
+  assert.ok(close(routes[0].length, 760.0, 0.05), String(routes[0].length));
 });
 
 // The drive pulley hangs off a motor shaft and the idler sits on a spindle, so
 // the two stack in OPPOSITE directions: the same position along each puts the
-// pitch circles apart rather than together. The machine says spindle@3 for that
+// pitch circles apart rather than together. The machine says spindle@2 for that
 // reason; @8, the number that looks like it should match the motor's, is the
 // mistake. Projecting the offset out is what makes the centre distance right
 // and is exactly what would have hidden this.
 test('pitch circles out of plane are refused rather than projected away', () => {
-  const r = resolve(parse(source.replace('spindle@3', 'spindle@8'), STAGE), catalogue, {});
+  const r = resolve(parse(source.replace('spindle@2', 'spindle@8'), STAGE), catalogue, {});
   const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
   const message = diagnostics.find((d) => /apart along the axis/.test(d.message));
   assert.ok(message, JSON.stringify(diagnostics));
   assert.equal(message.severity, ERROR);
-  assert.ok(/5\.0 mm/.test(message.message), message.message);
+  assert.ok(/6\.0 mm/.test(message.message), message.message);
 });
 
 // The check this machine's first version needed and did not have. It reported a

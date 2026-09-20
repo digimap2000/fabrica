@@ -20,5 +20,6 @@
     "rename": {
       "standard": "fastener"
     }
-  }
+  },
+  "material": "steel"
 }

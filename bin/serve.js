@@ -83,7 +83,12 @@ async function proxy(req, res, rest) {
   }
 }
 
-const catalogue = await loadCatalogue(ROOT);
+// Re-read per request rather than held from boot. It was cached, and editing a
+// stub then changed nothing until the server was restarted - which cost a round
+// of "why is the viewer still wrong" on a change that was already on disk.
+// A dozen small JSON files is nothing to read, and a dev server that lies about
+// the files under it is worse than a slow one.
+const catalogue = () => loadCatalogue(ROOT);
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -92,14 +97,14 @@ const server = createServer(async (req, res) => {
   if (path === '/') return serveStatic(res, '/viewer/index.html');
   if (path === '/catalogue.json') {
     res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-cache' });
-    return res.end(JSON.stringify(catalogue.records()));
+    return res.end(JSON.stringify((await catalogue()).records()));
   }
   if (path.startsWith('/mechanica/')) return proxy(req, res, url.href.slice(url.origin.length + '/mechanica'.length));
   return serveStatic(res, path);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   process.stdout.write(`fabrica viewer on http://localhost:${PORT}\n`);
-  process.stdout.write(`  catalogue: ${catalogue.size} components\n`);
+  process.stdout.write(`  catalogue: ${(await catalogue()).size} components, re-read per request\n`);
   process.stdout.write(`  mechanica: ${MECHANICA}\n`);
 });

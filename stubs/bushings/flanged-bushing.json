@@ -74,5 +74,6 @@
   },
   "mechanica": {
     "id": "bushings/flanged-bushing"
-  }
+  },
+  "material": "brass"
 }
