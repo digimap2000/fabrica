@@ -13,8 +13,8 @@
 // because two pulleys whose axes have drifted apart is a real mistake and the
 // formula would quietly return a plausible number for it.
 
-import { anchorInWorld } from './pose.js';
-import { cross, distance, dot, length, normalise, origin } from './matrix.js';
+import { anchorInWorld, boxInWorld } from './pose.js';
+import { add, cross, distance, dot, length, normalise, origin, scale } from './matrix.js';
 import { ERROR, WARN } from './resolve.js';
 
 const radiusOf = (anchor) => {
@@ -24,9 +24,39 @@ const radiusOf = (anchor) => {
   return null;
 };
 
+// How far a segment reaches inside a box, or null if it misses. The slab method,
+// and the depth is what makes the message useful: 'by 0.3 mm' is a clearance to
+// open up and 'by 14 mm' is a part in the wrong place.
+function segmentMeetsBox(from, to, box) {
+  const d = [0, 1, 2].map((i) => to[i] - from[i]);
+  let lo = 0, hi = 1;
+  for (const i of [0, 1, 2]) {
+    if (Math.abs(d[i]) < 1e-9) {
+      if (from[i] < box.min[i] || from[i] > box.max[i]) return null;
+      continue;
+    }
+    let t0 = (box.min[i] - from[i]) / d[i];
+    let t1 = (box.max[i] - from[i]) / d[i];
+    if (t0 > t1) [t0, t1] = [t1, t0];
+    lo = Math.max(lo, t0);
+    hi = Math.min(hi, t1);
+    if (lo > hi) return null;
+  }
+  // The shallowest face it would have to be pulled out through.
+  const mid = [0, 1, 2].map((i) => from[i] + d[i] * ((lo + hi) / 2));
+  return Math.min(...[0, 1, 2].map((i) => Math.min(mid[i] - box.min[i], box.max[i] - mid[i])));
+}
+
 export function resolveRoutes(resolved, poses) {
   const results = [];
   const diagnostics = [];
+
+  // Every posed body's world box, computed once for the clearance check below.
+  const boxes = new Map();
+  for (const [name, instance] of resolved.instances) {
+    const box = boxInWorld(instance.meta?.envelope, poses.get(name));
+    if (box) boxes.set(name, box);
+  }
 
   for (const route of resolved.routes) {
     const overRefs = route.over?.items ?? [];
@@ -150,10 +180,68 @@ export function resolveRoutes(resolved, poses) {
       diagnostics.push({ severity: WARN, message: `route '${name}': ${ends.length} clamped ends, so the cut is not subtracted` });
     }
 
+    // A belt is not just a length, it is a path through a machine full of other
+    // things - and nothing so far asked whether that path is CLEAR. It checked
+    // that the pulleys were parallel, that they were coplanar, and that the
+    // clamps were on the run, and then happily reported a belt threaded straight
+    // through a bracket.
+    //
+    // Boxes again, with the same honesty as the clash check: what does not
+    // overlap a box certainly does not overlap the part, so an empty result is a
+    // real all-clear. The pulleys the belt wraps and the clamps that grip it are
+    // exempt, because touching those is the belt's job.
+    // The pulleys the belt wraps and the clamps that grip it are exempt, because
+    // touching those is the belt's job - and so is whatever a pulley is THREADED
+    // ONTO. A motor's envelope is a NEMA square that includes its 5 mm shaft, so
+    // a belt on a pulley on that shaft is inside the motor's box by construction
+    // and always will be; the same goes for the bush and the post at the other
+    // end. Reporting it every time is how a check teaches people to ignore it.
+    //
+    // The walk stops at the first joint that is a FACE rather than a shaft, a
+    // spindle or a bore - which is the point where a thing stops carrying the
+    // pulley and starts merely being nearby. That is what keeps the brackets and
+    // the flanges in scope, and they are the ones the belt was actually cutting
+    // through.
+    const threaded = (name) => {
+      const seen = [name];
+      for (let at = name; ;) {
+        const up = resolved.tree.parentOf.get(at);
+        if (!up) break;
+        const anchor = resolved.instances.get(up.parent)?.meta?.anchors?.[up.joint.parent.anchor];
+        const carries = anchor?.kind === 'track' || anchor?.interface?.archetype === 'bore';
+        if (!carries) break;
+        seen.push(up.parent);
+        at = up.parent;
+      }
+      return seen;
+    };
+    const exempt = new Set([...overRefs, ...endRefs].flatMap((r) => threaded(r.instance)));
+    const runs = [1, -1].map((side) => [
+      add(a.point, scale(across, side * a.radius)),
+      add(b.point, scale(across, side * b.radius)),
+    ]);
+    const fouled = new Map();
+    for (const [instance, box] of boxes ?? []) {
+      if (exempt.has(instance)) continue;
+      for (const [from, to] of runs) {
+        const hit = segmentMeetsBox(from, to, box);
+        if (hit !== null) fouled.set(instance, Math.max(fouled.get(instance) ?? 0, hit));
+      }
+    }
+    if (fouled.size) {
+      diagnostics.push({
+        severity: ERROR,
+        message: `route '${name}': its run passes through `
+               + [...fouled].map(([n, d]) => `${n} (by ${d.toFixed(1)} mm)`).join(', ')
+               + ' - the belt has to have somewhere to go',
+      });
+    }
+
     results.push({
       name,
       id: route.of.id,
       length: closed - gap,
+      runs,
       closed,
       gap,
       centres,

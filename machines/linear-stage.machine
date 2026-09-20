@@ -96,9 +96,14 @@ part idler_flange = <extrusions/end-flange>(extrusion=profile, flange_size=60, f
 // untouched. So this needs no change to the part at all, only configuring.
 part motor_bracket = <brackets/nema-l-bracket>(frame=frame, holes=4, hole_circle=44, hole=3.4,
                                                width=60, flange_leg=60, motor_leg=70);
-part idler_bracket = <brackets/idler-l-bracket>(holes=4, hole_circle=44, hole=3.4,
-                                                width=60, flange_leg=60, spindle_leg=50,
-                                                spindle=5, spindle_length=24);   // TODO(mechanica)
+// The SAME bracket as the motor end. It was a mirrored idler bracket until the
+// hub argument was followed one step further: a bracket that presents a NEMA
+// face does not care what bolts to it, so the idler end is that bracket and a
+// short post shaped like a motor with no motor in it.
+part idler_bracket = <brackets/nema-l-bracket>(frame=frame, holes=4, hole_circle=44, hole=3.4,
+                                               width=60, flange_leg=60, motor_leg=70);
+part idler_post    = <idlers/idler-post>(frame=frame, body_length=20,
+                                         spindle=5, spindle_length=24);           // TODO(mechanica)
 
 part drive_pulley = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=5);
 part idler_pulley = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=5);
@@ -111,7 +116,7 @@ part idler_bush   = <bushings/flanged-bushing>(bore=5, outer_diameter=8, length=
 // is a leg thickness in from the outer one. So the carriage stands off 7 rather
 // than the 8 it did before, and the assumption is recorded because it was the
 // wrong way round rather than merely out.
-part carriage = <carriages/belt-carriage>(profile=profile, length=60, height=7);   // TODO(mechanica)
+part carriage = <carriages/belt-carriage>(profile=profile, length=60, height=13);  // TODO(mechanica)
 // Two numbers here are settled by the belt rather than chosen. reach is the
 // pitch radius, because the runs are one radius either side of the pulley axis.
 // groove is how far the grip line stands off the carriage, and it has to reach
@@ -144,9 +149,11 @@ joint fixed motor_bracket.motor_face_reverse -> motor.flange {
 }
 
 // A pulley slides onto a shaft and a grub screw decides where, so the shaft is
-// a track and this is a position along it. 8 mm out puts the pitch circle clear
-// of the extrusion and on the belt plane.
-joint fixed motor.shaft@8 -> drive_pulley.bore {
+// a track and this is a position along it. 14 rather than 8, because at 8 the
+// belt ran straight through both end flanges and both brackets - fabrica says
+// so now, naming each and by how much, which is a check it did not have until
+// this fouling was pointed out to it.
+joint fixed motor.shaft@14 -> drive_pulley.bore {
     fasten = grub;
 }
 
@@ -157,14 +164,16 @@ joint fixed idler_flange.flange -> idler_bracket.flange_face {
     fasten = <hardware/cap-screw>(standard="M5", length=16) x4;
 }
 
-// 2 rather than the motor's 8, and the difference is the whole lesson. The
-// drive pulley hangs off a shaft and the idler sits on a spindle, so the two
-// stack in OPPOSITE directions and equal positions do not make them coplanar.
-// It was 3 while the motor hung off the outside of its leg and is 2 now that it
-// hangs off the inside, which is a mechanical consequence of a change made for
-// an entirely different reason - and fabrica named it as 1.0 mm apart rather
-// than letting a belt ship that climbs its flange.
-joint fixed    idler_bracket.spindle@2 -> idler_bush.bore;
+joint fixed idler_bracket.motor_face_reverse -> idler_post.face {
+    fasten = <hardware/cap-screw>(standard="M3", length=10) x4;
+}
+
+// The SAME number as the motor's shaft, and that is the point of the post being
+// motor-shaped. It was 3, then 2, then it would have been something else again
+// after this change - two hand-tuned numbers that had to agree and kept not
+// agreeing, each time caught only because fabrica measures whether the pitch
+// circles are coplanar. Now they agree by construction.
+joint fixed    idler_post.spindle@14 -> idler_bush.bore;
 joint revolute idler_bush.outer        -> idler_pulley.bore {
     axis = [0, 0, 1];
 }

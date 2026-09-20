@@ -69,7 +69,7 @@ test('ground is the origin and everything is placed from it', () => {
 test('the flange chain lands where the flange thickness says it does', () => {
   const { poses } = poseTree(stage());
   assert.ok(near(at('motor_flange', poses), [0, 0, -6]), JSON.stringify(at('motor_flange', poses)));
-  assert.ok(near(at('drive_pulley', poses), [-32, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
+  assert.ok(near(at('drive_pulley', poses), [-38, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
 
   // The motor hangs off the INSIDE of its leg, so its body sits over the
   // bracket at +x rather than out in space at -x, while the shaft still comes
@@ -107,7 +107,7 @@ test('joined faces have opposed normals and touch at a point', () => {
 // puts the pulley at -22.
 test('a pinned track puts the child that far along it', () => {
   const { poses } = poseTree(stage());
-  assert.ok(near(at('drive_pulley', poses), [-32, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
+  assert.ok(near(at('drive_pulley', poses), [-38, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
 });
 
 // --- the joint that moves ---------------------------------------------------
@@ -131,37 +131,62 @@ test('a joint variable defaults to its home', () => {
 
 // --- the belt ---------------------------------------------------------------
 
-// Worked by hand: two 20-tooth GT2 pulleys, pitch diameter 12.73, at 322 mm
-// centres. A closed loop is 2 x 322 + pi x 12.73 = 683.99; the belt is cut
-// between clamps 24 mm apart, so 660.0.
+// Worked by hand: two 20-tooth GT2 pulleys, pitch diameter 12.73, at 332 mm
+// centres. A closed loop is 2 x 332 + pi x 12.73 = 703.99; the belt is cut
+// between clamps 24 mm apart, so 680.0.
 test('the belt length is derived, and it is the one worked out by hand', () => {
   const r = stage();
   const { routes } = resolveRoutes(r, poseTree(r).poses);
   assert.equal(routes.length, 1);
-  assert.ok(close(routes[0].length, 660.0, 0.05), String(routes[0].length));
-  assert.ok(close(routes[0].centres, 322, 1e-9));
+  assert.ok(close(routes[0].length, 680.0, 0.05), String(routes[0].length));
+  assert.ok(close(routes[0].centres, 332, 1e-9));
   assert.deepEqual(routes[0].teethEngaged, [10, 10], 'half of a 20-tooth pulley');
 });
 
 test('the belt follows the travel, because the idler does', () => {
   const r = stage({ travel: 150 });
   const { routes } = resolveRoutes(r, poseTree(r).poses);
-  assert.ok(close(routes[0].length, 760.0, 0.05), String(routes[0].length));
+  assert.ok(close(routes[0].length, 780.0, 0.05), String(routes[0].length));
 });
 
-// The drive pulley hangs off a motor shaft and the idler sits on a spindle, so
-// the two stack in OPPOSITE directions: the same position along each puts the
-// pitch circles apart rather than together. The machine says spindle@2 for that
-// reason; @8, the number that looks like it should match the motor's, is the
-// mistake. Projecting the offset out is what makes the centre distance right
-// and is exactly what would have hidden this.
+// The two ends now agree by construction - the same bracket, and a post shaped
+// like the motor it replaces, so equal positions along the two give coplanar
+// pulleys without anybody working it out. It took three wrong pairs to get
+// there, each caught by this check, so what is asserted now is that moving
+// ONE of them still fails: the agreement has to be real, not assumed.
 test('pitch circles out of plane are refused rather than projected away', () => {
-  const r = resolve(parse(source.replace('spindle@2', 'spindle@8'), STAGE), catalogue, {});
+  const r = resolve(parse(source.replace('idler_post.spindle@14', 'idler_post.spindle@8'), STAGE), catalogue, {});
   const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
   const message = diagnostics.find((d) => /apart along the axis/.test(d.message));
   assert.ok(message, JSON.stringify(diagnostics));
   assert.equal(message.severity, ERROR);
   assert.ok(/6\.0 mm/.test(message.message), message.message);
+});
+
+// The fouling that was pointed out rather than found: the belt ran straight
+// through both end flanges and both brackets, and every other check passed. A
+// belt is a path through a machine full of other things, and nothing asked
+// whether the path was clear.
+test('a belt threaded through the machine is refused', () => {
+  const r = resolve(parse(source.replace('motor.shaft@14', 'motor.shaft@8')
+                                .replace('idler_post.spindle@14', 'idler_post.spindle@8'), STAGE),
+                    catalogue, {});
+  const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
+  const message = diagnostics.find((d) => /passes through/.test(d.message));
+  assert.ok(message, JSON.stringify(diagnostics));
+  assert.equal(message.severity, ERROR);
+  assert.ok(/flange/.test(message.message), message.message);
+});
+
+// And what it must NOT report: a motor's envelope is a NEMA square that
+// includes its 5 mm shaft, so a belt on a pulley on that shaft is inside the
+// motor's box by construction. Naming it every time is how a check teaches
+// people to ignore it.
+test('what a pulley is threaded onto is not reported as fouling', () => {
+  const r = stage();
+  const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
+  const message = diagnostics.find((d) => /passes through/.test(d.message));
+  assert.equal(message, undefined, message?.message);
 });
 
 // The check this machine's first version needed and did not have. It reported a

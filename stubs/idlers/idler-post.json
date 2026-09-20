@@ -1,44 +1,41 @@
 {
-  "id": "brackets/idler-l-bracket",
+  "id": "idlers/idler-post",
   "source": "mechanica",
   "status": "does-not-exist",
   "kind": "made",
   "parameters": {
-    "holes": 4,
-    "hole_circle": 44,
-    "hole": 3.4,
-    "width": 60,
-    "flange_leg": 60,
-    "spindle_leg": 50,
+    "frame": "17",
+    "body_length": 20,
     "spindle": 5,
     "spindle_length": 24
   },
-  "designation": "idler L bracket, 5 mm spindle",
+  "designation": "NEMA 17 idler post, 5 mm spindle",
+  "material": "printed",
   "envelope": {
     "min": [
-      0,
-      0,
+      -21.15,
+      -21.15,
       0
     ],
     "max": [
-      60,
-      50,
-      60
+      21.15,
+      21.15,
+      44
     ]
   },
-  "_wanted": "geometry identical to brackets/nema-l-bracket, with a plain spindle standing off the second leg where that one has a NEMA face",
+  "_wanted": "a stub that bolts to a NEMA face and presents a plain spindle where a motor would present a shaft. Deliberately motor-shaped: the face at body_length with the spindle beyond it, so the same bracket and the same position along the two put the two pulleys in one plane without anybody working it out.",
   "anchors": {
-    "flange_face": {
+    "face": {
       "kind": "face",
       "origin": [
-        30,
         0,
-        30
+        0,
+        20
       ],
       "normal": [
         0,
-        -1,
-        0
+        0,
+        1
       ],
       "clock": [
         1,
@@ -46,10 +43,12 @@
         0
       ],
       "interface": {
-        "archetype": "bolt_circle",
+        "archetype": "rect_pattern",
+        "preset": "nema17_face",
+        "spacing": 31,
         "holes": 4,
-        "circle": 44,
-        "hole": 3.4,
+        "screw": "M3",
+        "pilot": 22,
         "clock": 45,
         "gender": "clearance"
       }
@@ -58,27 +57,27 @@
       "kind": "track",
       "origin": [
         0,
-        25,
-        30
+        0,
+        20
       ],
       "axis": [
-        -1,
         0,
-        0
+        0,
+        1
       ],
       "range": [
         0,
         24
       ],
       "normal": [
-        -1,
-        0,
-        0
-      ],
-      "clock": [
         0,
         0,
         1
+      ],
+      "clock": [
+        1,
+        0,
+        0
       ],
       "interface": {
         "archetype": "bore",
@@ -86,6 +85,5 @@
         "gender": "shaft"
       }
     }
-  },
-  "material": "printed"
+  }
 }
