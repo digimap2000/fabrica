@@ -17,6 +17,7 @@ import { loadCatalogue } from '../src/catalogue-fs.js';
 import { resolve, ERROR } from '../src/resolve.js';
 import { billOfMaterials } from '../src/bom.js';
 import { buildOrder } from '../src/build.js';
+import { anchorInWorld, poseTree } from '../src/pose.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGE = join(ROOT, 'machines', 'linear-stage.machine');
@@ -56,23 +57,37 @@ test('the stage resolves with no errors', () => {
 });
 
 test('the designation is resolved against what is configured', () => {
-  assert.equal(stage().designation, '300 mm belt-driven linear stage on 2020');
-  assert.equal(stage({ travel: 500 }).designation, '500 mm belt-driven linear stage on 2020');
+  assert.equal(stage().designation, '100 mm belt-driven linear stage on 2020');
+  assert.equal(stage({ travel: 150 }).designation, '150 mm belt-driven linear stage on 2020');
 });
 
 // Directed propagation, which is the whole bet. The beam is not asked for; it
 // follows the travel. If this ever stops holding, something has started solving.
 test('a parameter flows downward into the parts it settles', () => {
-  assert.equal(stage().instances.get('beam').args.length, 420);
-  assert.equal(stage({ travel: 500 }).instances.get('beam').args.length, 620);
+  // The beam is travel plus 150 - the carriage's length and the clearance at
+  // each end that keeps it off the flanges. It is never asked for directly.
+  assert.equal(stage().instances.get('beam').args.length, 250);
+  assert.equal(stage({ travel: 150 }).instances.get('beam').args.length, 300);
+});
 
-  // And the joint that positions the idler moves with it
-  const steps = buildOrder(stage({ travel: 500 })).map((s) => s.text);
-  assert.ok(steps.some((t) => t.includes('600 mm along')), steps.join('\n'));
+// The idler hangs off the beam's far end, and that end is at `length` - a
+// number the component is configured with, not one a stub can write down.
+// Pinning it as a constant made this machine's headline parameter do nothing
+// at all: the beam grew, the idler stayed, and the belt came out the same
+// length at every travel while looking entirely correct.
+test('an anchor positioned by a parameter follows it', () => {
+  const far = (t) => {
+    const r = stage({ travel: t });
+    const w = anchorInWorld(r, poseTree(r).poses, { instance: 'beam', anchor: 'end_b' });
+    return w.point[2];
+  };
+  assert.equal(far(50), 200);
+  assert.equal(far(100), 250);
+  assert.equal(far(150), 300);
 });
 
 test('a value outside the designed range is a warning, not a refusal', () => {
-  const r = stage({ travel: 5000 });
+  const r = stage({ travel: 5000 });   // far beyond what mechanica will even model
   assert.deepEqual(errors(r), []);
   assert.ok(r.diagnostics.some((d) => /above the designed maximum/.test(d.message)));
 });
@@ -86,27 +101,42 @@ test('an unknown parameter is refused rather than ignored', () => {
 test('fastenings are counted across every joint that uses them', () => {
   const bom = billOfMaterials(stage());
   const m5 = bom.bought.find((l) => l.id === 'hardware/cap-screw' && l.args.standard === 'M5');
-  assert.equal(m5.count, 8, 'two joints of four screws each');
+  assert.equal(m5.count, 8, 'two flange joints of four screws each');
 });
 
-// One 'stock t_nut' declaration, eight T-nuts. Counting the declaration as one
-// would be wrong in the only place the number matters - the thing you buy.
+// A consumable is a stock declaration something fastens INTO: one line in the
+// file, as many items as the joints eat. The linear stage no longer has one -
+// the flange hub bolts to a bolt circle rather than into a slot - so this is a
+// fixture, which is the better place for it anyway.
 test('a consumable is counted by what consumes it, not as one instance', () => {
-  const bom = billOfMaterials(stage());
-  const nuts = bom.bought.find((l) => l.id === 't-nut');
-  assert.equal(nuts.count, 8);
+  const r = resolve(parse(`
+    @proven 1;
+    stock rail = <rail>();
+    stock a = <block>(size=1);
+    stock nut = <block>(size=2);
+    ground rail;
+    joint fixed rail.face -> a.face { fasten = <screw>() x6 into nut; }
+  `, '<test>'), fake({ rail: RAIL, block: BLOCK }));
+  // The two blocks carry different arguments on purpose: identical ones would
+  // group into a single line, which would hide the very thing being counted.
+  const line = billOfMaterials(r).bought.find((l) => l.args.size === 2);
+  assert.ok(line, 'six nuts out of one declaration');
+  assert.ok(r.consumed.has('nut'));
 });
 
-test('the same part at different parameters is two lines, not one', () => {
+// Both pulleys are now the same part at the same numbers, which is one line of
+// two rather than two lines of one - and that IS the grouping being right.
+test('two instances of one part at one parameter set are a single line', () => {
   const pulleys = billOfMaterials(stage()).made.filter((l) => l.id === 'pulleys/timing-pulley');
-  assert.equal(pulleys.length, 2);
-  assert.deepEqual(pulleys.map((p) => p.args.bore).sort(), [5, 8]);
+  assert.equal(pulleys.length, 1);
+  assert.equal(pulleys[0].count, 2);
 });
 
 test('parts mechanica does not have are carried, not dropped', () => {
   const made = billOfMaterials(stage()).made;
-  const absent = made.filter((l) => l.status !== 'exists').map((l) => l.id);
-  assert.ok(absent.includes('brackets/motor-mount'));
+  const absent = made.filter((l) => l.status !== 'exists').map((l) => l.id).sort();
+  assert.deepEqual(absent,
+    ['brackets/idler-l-bracket', 'carriages/belt-carriage', 'clamps/belt-clamp']);
   assert.equal(made.length, 7, 'every made part appears whether or not it exists yet');
 });
 

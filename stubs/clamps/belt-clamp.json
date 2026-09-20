@@ -4,23 +4,25 @@
   "status": "does-not-exist",
   "kind": "made",
   "parameters": {
-    "profile": "GT2 2 mm"
+    "profile": "GT2 2 mm",
+    "width": 6,
+    "grip": 12,
+    "spacing": 24,
+    "groove": 9.5,
+    "reach": 6.365
   },
   "designation": "GT2 belt clamp",
   "envelope": {
     "min": [
-      -16,
-      -6,
+      -18,
+      -8,
       0
     ],
     "max": [
-      16,
-      6,
-      9
+      18,
+      8,
+      12
     ]
-  },
-  "mass": {
-    "volume_mm3": 2400
   },
   "anchors": {
     "carriage_face": {
@@ -52,13 +54,13 @@
     "belt_a": {
       "kind": "face",
       "origin": [
+        6.365,
         -12,
-        0,
-        4.5
+        9.5
       ],
       "normal": [
-        -1,
         0,
+        -1,
         0
       ],
       "clock": [
@@ -75,13 +77,13 @@
     "belt_b": {
       "kind": "face",
       "origin": [
+        6.365,
         12,
-        0,
-        4.5
+        9.5
       ],
       "normal": [
-        1,
         0,
+        1,
         0
       ],
       "clock": [
@@ -95,5 +97,7 @@
         "gender": "clamp"
       }
     }
-  }
+  },
+  "_reach": "must equal the pulleys' pitch radius: the belt's runs are one radius either side of the axis, and a clamp that is not on a run grips air. 20 teeth at GT2 2 mm is a 12.73 pitch diameter, so 6.365.",
+  "_groove": "how far the grip line stands off the carriage. The belt plane is the PITCH circle's plane, which sits 5.5 mm into the pulley from its bore face - so this is not just the clamp's own thickness. fabrica fails the build when it is wrong, which is how 9.5 was arrived at rather than 4."
 }

@@ -1,0 +1,90 @@
+{
+  "id": "brackets/idler-l-bracket",
+  "source": "mechanica",
+  "status": "does-not-exist",
+  "kind": "made",
+  "parameters": {
+    "holes": 4,
+    "hole_circle": 44,
+    "hole": 3.4,
+    "width": 60,
+    "flange_leg": 60,
+    "spindle_leg": 50,
+    "spindle": 5,
+    "spindle_length": 24
+  },
+  "designation": "idler L bracket, 5 mm spindle",
+  "envelope": {
+    "min": [
+      0,
+      0,
+      0
+    ],
+    "max": [
+      60,
+      50,
+      60
+    ]
+  },
+  "_wanted": "geometry identical to brackets/nema-l-bracket, with a plain spindle standing off the second leg where that one has a NEMA face",
+  "anchors": {
+    "flange_face": {
+      "kind": "face",
+      "origin": [
+        30,
+        0,
+        30
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "bolt_circle",
+        "holes": 4,
+        "circle": 44,
+        "hole": 3.4,
+        "clock": 45,
+        "gender": "clearance"
+      }
+    },
+    "spindle": {
+      "kind": "track",
+      "origin": [
+        0,
+        25,
+        30
+      ],
+      "axis": [
+        -1,
+        0,
+        0
+      ],
+      "range": [
+        0,
+        24
+      ],
+      "normal": [
+        -1,
+        0,
+        0
+      ],
+      "clock": [
+        0,
+        0,
+        1
+      ],
+      "interface": {
+        "archetype": "bore",
+        "diameter": 5,
+        "gender": "shaft"
+      }
+    }
+  }
+}

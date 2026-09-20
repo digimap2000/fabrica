@@ -20,8 +20,7 @@
       200
     ]
   },
-  "_measured": "runs along its own +z from 0 to length, 20 square centred on x and y",
-  "_limit": "mechanica caps length at 300 mm; a 300 mm-travel stage needs 420",
+  "_measured": "runs along its own +z from 0 to length, 20 square centred on x and y. end_b and the slot ranges are written as the parameter name rather than a number, because they move when the part is configured - which a constant cannot say, and which silently froze the stage's idler end at 200 mm.",
   "anchors": {
     "end_a": {
       "kind": "face",
@@ -51,7 +50,7 @@
       "origin": [
         0,
         0,
-        200
+        "length"
       ],
       "normal": [
         0,
@@ -67,6 +66,138 @@
         "archetype": "extrusion_end",
         "profile": "2020",
         "gender": "spigot"
+      }
+    },
+    "slot_x_minus": {
+      "kind": "track",
+      "origin": [
+        -10,
+        0,
+        0
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "range": [
+        0,
+        "length"
+      ],
+      "normal": [
+        -1,
+        0,
+        0
+      ],
+      "clock": [
+        0,
+        1,
+        0
+      ],
+      "interface": {
+        "archetype": "t_slot",
+        "profile": "2020",
+        "width": 6,
+        "gender": "slot"
+      }
+    },
+    "slot_x_plus": {
+      "kind": "track",
+      "origin": [
+        10,
+        0,
+        0
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "range": [
+        0,
+        "length"
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "clock": [
+        0,
+        -1,
+        0
+      ],
+      "interface": {
+        "archetype": "t_slot",
+        "profile": "2020",
+        "width": 6,
+        "gender": "slot"
+      }
+    },
+    "slot_y_minus": {
+      "kind": "track",
+      "origin": [
+        0,
+        -10,
+        0
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "range": [
+        0,
+        "length"
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "clock": [
+        -1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "t_slot",
+        "profile": "2020",
+        "width": 6,
+        "gender": "slot"
+      }
+    },
+    "slot_y_plus": {
+      "kind": "track",
+      "origin": [
+        0,
+        10,
+        0
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "range": [
+        0,
+        "length"
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "clock": [
+        1,
+        0,
+        0
+      ],
+      "interface": {
+        "archetype": "t_slot",
+        "profile": "2020",
+        "width": 6,
+        "gender": "slot"
       }
     }
   },

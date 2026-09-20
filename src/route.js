@@ -105,6 +105,43 @@ export function resolveRoutes(resolved, poses) {
     const wrapB = Math.PI - 2 * alpha;
     const closed = 2 * tangent + a.radius * wrapA + b.radius * wrapB;
 
+    // The check this machine's first version needed and did not have. Everything
+    // above proves the belt is a sensible loop; none of it asks whether the
+    // things gripping it are anywhere near it. The first linear stage clamped
+    // air 37.5 mm from the run and reported a confident 816 mm, because every
+    // number in that calculation was correct and the only wrong thing was the
+    // arrangement.
+    //
+    // A run is a line parallel to the centre line, offset by one radius
+    // perpendicular to both it and the axis. Both cut ends belong on the SAME
+    // run - a loop cut once gives two ends side by side, not one on each side.
+    const centreLine = normalise([-between[0], -between[1], -between[2]]);
+    const across = normalise(cross(normalise(a.axis), centreLine));
+    const offsets = ends.map((e) => {
+      const d = [e.point[0] - a.point[0], e.point[1] - a.point[1], e.point[2] - a.point[2]];
+      return { plane: dot(d, normalise(a.axis)), side: dot(d, across) };
+    });
+
+    const strays = offsets
+      .map((o, i) => ({ o, ref: endRefs[i] }))
+      .filter(({ o }) => Math.abs(Math.abs(o.side) - a.radius) > 0.5 || Math.abs(o.plane) > 0.5);
+
+    if (strays.length) {
+      diagnostics.push({
+        severity: ERROR,
+        message: `route '${name}': ${strays.map(({ ref, o }) =>
+          `${ref.instance}.${ref.anchor} is ${Math.abs(Math.abs(o.side) - a.radius).toFixed(1)} mm off the run`
+          + (Math.abs(o.plane) > 0.5 ? ` and ${Math.abs(o.plane).toFixed(1)} mm out of its plane` : '')).join(', ')}`
+          + ' - a clamp that is not on the belt grips air, whatever length this reports',
+      });
+    } else if (offsets.length === 2 && offsets[0].side * offsets[1].side < 0) {
+      diagnostics.push({
+        severity: ERROR,
+        message: `route '${name}': the two ends are clamped to opposite runs. `
+               + 'A loop cut once gives two ends side by side on one run.',
+      });
+    }
+
     // An open belt clamped at both ends follows the closed path and is then cut
     // between the clamps, so the gap between them comes off. Two ends is the
     // only case this handles, and anything else is refused above.

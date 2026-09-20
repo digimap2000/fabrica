@@ -20,6 +20,34 @@ import {
 } from './matrix.js';
 import { WARN, ERROR } from './resolve.js';
 
+// An anchor may be positioned by one of its component's own parameters, and it
+// has to be: an extrusion's far end is at `length`, not at any number a stub
+// could write down. Pinning it as a constant made the linear stage's headline
+// parameter do nothing at all - the beam grew and the idler stayed where it
+// was, so the belt came out the same 540 mm at every travel and looked right.
+//
+// So a coordinate may be a string naming a parameter instead of a number. That
+// is the smallest thing that expresses what is true, and it is deliberately not
+// a little expression language: if an anchor ever needs arithmetic, that is
+// mechanica's to publish rather than fabrica's to invent.
+function valueOf(v, args, where) {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') {
+    const found = args?.[v];
+    if (typeof found !== 'number') {
+      throw new Error(`${where}: anchor refers to '${v}', which is not a number this component was given`);
+    }
+    return found;
+  }
+  throw new Error(`${where}: an anchor coordinate must be a number or a parameter name`);
+}
+
+export function resolveAnchor(anchor, args, where = 'anchor') {
+  if (!anchor) return anchor;
+  const fix = (a) => (Array.isArray(a) ? a.map((v) => valueOf(v, args, where)) : a);
+  return { ...anchor, origin: fix(anchor.origin), axis: fix(anchor.axis), range: fix(anchor.range) };
+}
+
 // An anchor's frame on its own body. A track takes a position along its axis;
 // everything else ignores it.
 export function anchorFrame(anchor, at = 0) {
@@ -79,8 +107,12 @@ export function poseTree(resolved, chosen = {}) {
     const parentPose = poses.get(joint.parent.instance);
     if (!parentPose) continue;                 // parent unplaced, already reported
 
-    const parentAnchor = resolved.instances.get(joint.parent.instance)?.meta?.anchors?.[joint.parent.anchor];
-    const childAnchor = resolved.instances.get(joint.child.instance)?.meta?.anchors?.[joint.child.anchor];
+    const parentOf = resolved.instances.get(joint.parent.instance);
+    const childOf = resolved.instances.get(joint.child.instance);
+    const parentAnchor = resolveAnchor(parentOf?.meta?.anchors?.[joint.parent.anchor],
+                                       parentOf?.args, `${joint.parent.instance}.${joint.parent.anchor}`);
+    const childAnchor = resolveAnchor(childOf?.meta?.anchors?.[joint.child.anchor],
+                                      childOf?.args, `${joint.child.instance}.${joint.child.anchor}`);
     if (!parentAnchor || !childAnchor) {
       diagnostics.push({
         severity: WARN,
@@ -118,7 +150,8 @@ export function poseTree(resolved, chosen = {}) {
 // check both actually want.
 export function anchorInWorld(resolved, poses, ref) {
   const instance = resolved.instances.get(ref.instance);
-  const anchor = instance?.meta?.anchors?.[ref.anchor];
+  const anchor = resolveAnchor(instance?.meta?.anchors?.[ref.anchor], instance?.args,
+                               `${ref.instance}.${ref.anchor}`);
   const pose = poses.get(ref.instance);
   if (!anchor || !pose) return null;
   const at = ref.at === undefined ? 0 : resolved.evaluate(ref.at);

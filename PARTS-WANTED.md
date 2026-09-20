@@ -21,6 +21,22 @@ and 4 stand, and the prerequisite table is done.
 
 ---
 
+## The belt plane: fixed, and what it took
+
+`machines/linear-stage.machine` has been rewritten around the belt plane rather
+than around its parts, and `src/route.js` now refuses a route whose clamped ends
+do not lie on its run - the check that was missing when the fault below went
+unnoticed. What follows is left as written because it is the record of how the
+fault was found; the arrangement it describes has been superseded by the flange
+hub, but the reasoning has not.
+
+Three more faults of the same family surfaced during the rewrite, each caught by
+a check rather than by eye: the pitch circles 5 mm apart because a shaft and a
+spindle stack in opposite directions, the clamp 5.5 mm short of the pitch plane,
+and the carriage sitting astride the motor flange at the bottom of its stroke.
+
+### The original fault, as found
+
 ## Read this first: the stage's belt plane is wrong
 
 Before any of these are built, the machine they serve has a geometric fault, and
@@ -185,105 +201,89 @@ own README and the print list is what will make it load-bearing.
 
 ---
 
-## 2. `brackets/idler-block`
+## 2. `brackets/idler-l-bracket`
 
-The other end. A block that bolts to the same beam and presents a plain spindle
-for an idler pulley to turn on, coaxial with the motor's shaft.
+**Changed.** I first asked for a block that bolts into a T-slot. That was the
+same mistake as part 1 and it goes the same way: the idler end now hangs off the
+identical flange hub, so what is wanted is the **mirror of
+`brackets/nema-l-bracket`** with a plain spindle where that one has a NEMA face.
 
-**Designation:** `"{profile} idler block, {spindle} mm spindle"` → `2020 idler
-block, 5 mm spindle`
-
-**Parameters**
+**Designation:** `"idler L bracket, {spindle} mm spindle"`
 
 | Name | Type | Aspect | Notes |
 | --- | --- | --- | --- |
-| `profile` | `standard` | form | family `t_slot` |
-| `spindle` | `distance` | form | settled by the bushing that runs on it |
-| `axis_height` | `distance` | size | must match the motor mount's, and the machine file makes them match |
-| `spindle_length` | `distance` | size | enough for the bushing plus a retaining washer |
-| `plate` | `distance` | size | |
-| `fixings` | `count` | mounting | |
+| `holes`, `hole_circle`, `hole` | as the NEMA bracket | mounting | the hub's three numbers, and nothing else is shared |
+| `width`, `flange_leg`, `spindle_leg` | `distance` | size | **must default to the NEMA bracket's 60, 60, 50** |
+| `spindle` | `distance` | form | settled by the bushing that runs on it - 5 |
+| `spindle_length` | `distance` | size | bushing plus a retaining washer |
+| `thickness`, `gusset`, `fit` | as the NEMA bracket | | |
 
-**Interface fabrica needs**
+**The sameness is the specification.** The two brackets must put their axis in
+the same place relative to the bolt circle, because the two pulleys have to be
+coplanar or the belt climbs its flange and shreds. Identical leg geometry is the
+cheapest way to guarantee it.
 
-| Anchor | Where | Carries |
-| --- | --- | --- |
-| `rail_face` | origin, normal `-z` | T-slot pattern, as above |
-| `spindle` | axis parallel to the motor's, at `axis_height`, on the centre plane | `archetype: bore`, diameter `spindle`, gender `shaft` |
+**Interface:** `flange_face` exactly as the NEMA bracket's, and `spindle` as a
+**track** - a pulley slides along a spindle and a circlip decides where, which
+is a position along a line rather than a fixed point.
 
-**The thing that went wrong once already, in fabrica, and is worth knowing:**
-the drive pulley hangs off a motor shaft and the idler sits on this spindle, so
-the two stack in **opposite directions**. Equal heights do not make the pulleys
-coplanar; they put them two pulley-thicknesses apart. `axis_height` is measured
-to the *axis*, and what has to match is where the pitch circle lands. fabrica
-now checks this and will fail the contract if it drifts.
-
----
+The stage sets that position to 3 mm where the motor's pulley sits at 8, and the
+difference is not arbitrary: the drive pulley hangs off a shaft and the idler
+sits on a spindle, so the two stack in **opposite directions**. Equal numbers put
+the pitch circles 5 mm apart. fabrica fails the build when they are, which is
+how 3 was arrived at.
 
 ## 3. `carriages/belt-carriage`
 
-What rides the beam. A block that captures the top slot, slides freely along it,
-and presents a flat face on top for a belt clamp.
+**Reframed.** It rides the beam's **side** slot and hangs outboard, not the top
+- the belt runs alongside that face and the carriage has to reach it.
 
 **Designation:** `"{profile} belt carriage"`
 
-**Parameters**
-
 | Name | Type | Aspect | Notes |
 | --- | --- | --- | --- |
-| `profile` | `standard` | form | family `t_slot` |
-| `length` | `distance` | size | along travel; longer is less prone to racking |
-| `height` | `distance` | size | sets the belt line, so it matters to the machine |
-| `fit` | `distance` | mounting | slot clearance. A printed part's running fit, and the one number that decides whether this works at all |
-| `chamfer` | `distance` | finish | `d=`, and it is `d=` not `r=` |
+| `profile` | `standard` | form | family `t_slot_extrusion` |
+| `length` | `distance` | size | along travel; longer racks less. 60 in the stage, and it sets how far the stroke must start from each flange |
+| `height` | `distance` | size | how far it stands off the slot face. 8, and with the clamp's 9.5 it is what puts the grip on the belt |
+| `fit` | `distance` | mounting | the running clearance, and the one number that decides whether this works at all |
+| `chamfer` | `distance` | finish | `d=`, not `r=` |
 
-**Interface fabrica needs**
+**Interface:** `rail_face` is a **rider** on the slot - fabrica mates a prismatic
+joint to it, so it slides rather than bolts. `belt_face` at `[0, 0, height]`
+carries two M3 clearance holes for the clamp.
 
-| Anchor | Where | Carries |
-| --- | --- | --- |
-| `rail_face` | origin, normal `-z` | `archetype: t_slot`, gender `rider` - this one **slides**, it is not bolted, and fabrica mates a prismatic joint to it |
-| `belt_face` | `[0, 0, height]`, normal `+z` | two M3 clearance holes for the clamp, spacing in the interface |
-
-`fit` deserves a real `convention` tag. Every printer produces a different one
-and the honest thing is to say how to find yours, not to pick a number and hope.
-
----
+`fit` deserves a real `convention` tag. Every printer gives a different one, and
+the honest thing is to say how to find yours.
 
 ## 4. `clamps/belt-clamp`
 
-Grips both cut ends of the belt and bolts to the carriage. Small, and the part
-that decides whether the stage holds position.
+**Reframed**, and two of its numbers are settled by the belt rather than chosen.
 
-**Designation:** `"{profile} belt clamp"` → `GT2 belt clamp`
-
-**Parameters**
+**Designation:** `"{profile} belt clamp"`
 
 | Name | Type | Aspect | Notes |
 | --- | --- | --- | --- |
-| `profile` | `standard` | form | family `belt_profile` - **this table exists**, `belts/tooth-profiles.table.json` |
+| `profile` | `standard` | form | family `belt_profile` - the table exists |
 | `width` | `distance` | form | belt width, 6 or 9 for GT2 |
 | `grip` | `distance` | size | how much belt is held; too little and it walks |
-| `spacing` | `distance` | size | between the two belt ends. fabrica subtracts exactly this from the loop to get the cut length, so it is not cosmetic |
-| `screws` | `count` | mounting | |
+| `spacing` | `distance` | size | between the two ends. fabrica subtracts exactly this from the loop, so it is not cosmetic |
+| `reach` | `distance` | form | **the pulleys' pitch radius.** The belt's runs are one radius either side of the axis, so a clamp anywhere else grips air |
+| `groove` | `distance` | form | **how far the grip line stands off the carriage.** It must reach the *pitch circle's* plane, which sits 5.5 mm into the pulley from its bore face - not flush with it |
+
+`reach` and `groove` are marked form rather than size because neither is a
+preference: both are settled by the pulley the belt goes round. They were
+arrived at by fabrica refusing the build until they were right, which is what
+that check exists for.
+
+**Interface:** `carriage_face` matching the carriage's `belt_face`; `belt_a` and
+`belt_b` at `[reach, -spacing/2, groove]` and `[reach, +spacing/2, groove]`.
+
+**Both ends grip the same run.** A loop cut once gives two ends side by side,
+not one on each side, and fabrica refuses the other arrangement.
 
 The gripping face should be **toothed to the belt profile**, not flat - a flat
-clamp on a toothed belt relies on friction and creeps. The profile table already
-has the tooth geometry, so this is reading a table rather than inventing a
-shape.
-
-**Interface fabrica needs**
-
-| Anchor | Where | Carries |
-| --- | --- | --- |
-| `carriage_face` | origin, normal `-z` | the M3 pattern matching the carriage's `belt_face` |
-| `belt_a` | `[-spacing/2, 0, groove]` | `archetype: belt_end`, gender `clamp` |
-| `belt_b` | `[+spacing/2, 0, groove]` | same |
-
-**Both belt anchors must lie on the belt's run** - same `z`, on the centre
-plane, separated by `spacing` along travel. That is the whole correction at the
-top of this document, expressed as two coordinates.
-
----
+clamp on a toothed belt relies on friction and creeps. `belts/tooth-profiles`
+already has the geometry.
 
 ## Found while wiring the new parts up
 

@@ -62,12 +62,14 @@ test('ground is the origin and everything is placed from it', () => {
   assert.equal(diagnostics.filter((d) => d.severity === ERROR).length, 0);
 });
 
-// Worked by hand: the beam's left slot is the face at y = -10, so a bracket
-// bolted to it sits there, and its 46 mm motor face is 46 further out.
-test('a bracket lands on the face it is bolted to, and its far face 46 beyond', () => {
+// The hub, end to end. The flange swallows the beam's end so its socket floor
+// sits at the beam's zero and its plate 6 mm beyond; the bracket bolts to that
+// plate; the motor bolts to the bracket. Worked by hand from the flange's own
+// 6 mm thickness, not read off the output.
+test('the flange chain lands where the flange thickness says it does', () => {
   const { poses } = poseTree(stage());
-  assert.ok(near(at('mount', poses), [0, -10, 0]), JSON.stringify(at('mount', poses)));
-  assert.ok(near(at('motor', poses), [0, -56, 0]), JSON.stringify(at('motor', poses)));
+  assert.ok(near(at('motor_flange', poses), [0, 0, -6]), JSON.stringify(at('motor_flange', poses)));
+  assert.ok(near(at('drive_pulley', poses), [-22, 0, -31]), JSON.stringify(at('drive_pulley', poses)));
 });
 
 // The mating rule, asserted directly rather than through a position: two faces
@@ -94,72 +96,107 @@ test('joined faces have opposed normals and touch at a point', () => {
   assert.equal(checked, r.tree.order.length, 'every joint was actually checked');
 });
 
+// A pulley slides onto a shaft and a grub screw decides where, so the shaft is
+// a track and the joint pins it. 8 mm along a shaft whose face is at x = -30
+// puts the pulley at -22.
 test('a pinned track puts the child that far along it', () => {
   const { poses } = poseTree(stage());
-  // the idler block sits at travel + 100 = 400 along the beam
-  assert.ok(near(at('idler_block', poses), [400, -10, 0]));
-  assert.ok(near(at('idler_block', poseTree(stage({ travel: 500 })).poses), [600, -10, 0]));
+  assert.ok(near(at('drive_pulley', poses), [-22, 0, -31]), JSON.stringify(at('drive_pulley', poses)));
 });
 
 // --- the joint that moves ---------------------------------------------------
 
 test('a prismatic joint moves its child and everything on it', () => {
   const home = poseTree(stage()).poses;
-  const out = poseTree(stage(), { carriage: 300 }).poses;
-  assert.ok(near(at('carriage', home), [0, 0, 10]));
-  assert.ok(near(at('carriage', out), [300, 0, 10]));
+  const out = poseTree(stage(), { carriage: 160 }).poses;
+  assert.ok(near(at('carriage', home), [-10, 0, 60]), JSON.stringify(at('carriage', home)));
+  assert.ok(near(at('carriage', out), [-10, 0, 160]));
   // the clamp is bolted to the carriage, so it comes too
-  assert.ok(close(at('clamp', out)[0] - at('clamp', home)[0], 300));
+  assert.ok(close(at('clamp', out)[2] - at('clamp', home)[2], 100));
 });
 
+// The stroke starts 60 mm in because the motor flange is 60 across and reaches
+// into the path of anything riding the slot. Home is that start, not zero.
 test('a joint variable defaults to its home', () => {
   const { variables } = poseTree(stage());
-  assert.equal(variables.get('carriage').home, 0);
-  assert.deepEqual(variables.get('carriage').limits, [0, 300]);
+  assert.equal(variables.get('carriage').home, 60);
+  assert.deepEqual(variables.get('carriage').limits, [60, 160]);
 });
 
 // --- the belt ---------------------------------------------------------------
 
-// Worked by hand: two 20-tooth GT2 pulleys, pitch diameter 12.73, at 400 mm
-// centres. A closed loop is 2 x 400 + pi x 12.73 = 839.99; the belt is cut
-// between clamps 24 mm apart, so 816.0.
+// Worked by hand: two 20-tooth GT2 pulleys, pitch diameter 12.73, at 312 mm
+// centres - the 250 mm beam plus 31 mm of flange and bracket at each end. A
+// closed loop is 2 x 312 + pi x 12.73 = 663.99; the belt is cut between clamps
+// 24 mm apart, so 640.0.
 test('the belt length is derived, and it is the one worked out by hand', () => {
   const r = stage();
   const { routes } = resolveRoutes(r, poseTree(r).poses);
   assert.equal(routes.length, 1);
-  assert.ok(close(routes[0].length, 816.0, 0.05), String(routes[0].length));
-  assert.ok(close(routes[0].centres, 400, 1e-9));
+  assert.ok(close(routes[0].length, 640.0, 0.05), String(routes[0].length));
+  assert.ok(close(routes[0].centres, 312, 1e-9));
   assert.deepEqual(routes[0].teethEngaged, [10, 10], 'half of a 20-tooth pulley');
 });
 
 test('the belt follows the travel, because the idler does', () => {
-  const r = stage({ travel: 500 });
+  const r = stage({ travel: 150 });
   const { routes } = resolveRoutes(r, poseTree(r).poses);
-  assert.ok(close(routes[0].length, 1216.0, 0.05), String(routes[0].length));
+  assert.ok(close(routes[0].length, 740.0, 0.05), String(routes[0].length));
 });
 
-// The check that found a real fault in this machine's own stubs: the drive
-// pulley hangs off a motor shaft and the idler sits on a spindle, so the two
-// stack in opposite directions and equal heights do NOT make them coplanar.
-// Projecting the offset out is what makes the centre distance right, and is
-// exactly what would have hidden this.
-test('pitch circles out of plane are refused rather than projected away', async () => {
-  const bent = {
-    ...catalogue,
-    get: (id) => {
-      const record = catalogue.get(id);
-      if (id !== 'brackets/idler-block') return record;
-      const copy = structuredClone(record);
-      copy.anchors.spindle.origin = [0, 0, 46];      // as first written, and wrong
-      return copy;
-    },
-  };
-  const r = resolve(parse(source, STAGE), bent, {});
+// The drive pulley hangs off a motor shaft and the idler sits on a spindle, so
+// the two stack in OPPOSITE directions: the same position along each puts the
+// pitch circles apart rather than together. The machine says spindle@3 for that
+// reason; @8, the number that looks like it should match the motor's, is the
+// mistake. Projecting the offset out is what makes the centre distance right
+// and is exactly what would have hidden this.
+test('pitch circles out of plane are refused rather than projected away', () => {
+  const r = resolve(parse(source.replace('spindle@3', 'spindle@8'), STAGE), catalogue, {});
   const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
   const message = diagnostics.find((d) => /apart along the axis/.test(d.message));
   assert.ok(message, JSON.stringify(diagnostics));
   assert.equal(message.severity, ERROR);
-  assert.ok(/13\.0 mm/.test(message.message), message.message);
+  assert.ok(/5\.0 mm/.test(message.message), message.message);
+});
+
+// The check this machine's first version needed and did not have. It reported a
+// confident 816 mm of belt while the clamps hung 37.5 mm from the run, because
+// every number in that calculation was correct and only the arrangement was
+// wrong. Here the clamp is pulled back off the run and the build is refused.
+test('a clamp that does not reach the belt is refused, whatever length it reports', () => {
+  const shallow = {
+    ...catalogue,
+    get: (id) => {
+      const record = catalogue.get(id);
+      if (id !== 'clamps/belt-clamp') return record;
+      const copy = structuredClone(record);
+      copy.anchors.belt_a.origin[2] = 4;        // as first written: short of the pitch plane
+      copy.anchors.belt_b.origin[2] = 4;
+      return copy;
+    },
+  };
+  const r = resolve(parse(source, STAGE), shallow, {});
+  const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
+  const message = diagnostics.find((d) => /out of its plane/.test(d.message));
+  assert.ok(message, JSON.stringify(diagnostics));
+  assert.equal(message.severity, ERROR);
+  assert.ok(/grips air/.test(message.message), message.message);
+});
+
+test('both cut ends must be clamped to the same run', () => {
+  const split = {
+    ...catalogue,
+    get: (id) => {
+      const record = catalogue.get(id);
+      if (id !== 'clamps/belt-clamp') return record;
+      const copy = structuredClone(record);
+      copy.anchors.belt_b.origin[0] = 0 - copy.anchors.belt_b.origin[0];   // onto the other run
+      return copy;
+    },
+  };
+  const r = resolve(parse(source, STAGE), split, {});
+  const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
+  assert.ok(diagnostics.some((d) => /opposite runs/.test(d.message)), JSON.stringify(diagnostics));
 });
 
 // --- space ------------------------------------------------------------------
@@ -185,11 +222,21 @@ test('things jointed together are not reported as clashing', () => {
   }
 });
 
-test('a carriage driven into the motor end is found', () => {
+// Turned round from how it started. The clash check found the carriage sitting
+// astride the motor flange at the bottom of its stroke, and the fix was to
+// start the stroke 60 mm in - so what is worth asserting now is that the limit
+// is doing that work: clear everywhere it is allowed to go, and fouling the
+// flange the moment it is driven below it.
+test('the stroke is clear of the motor end, and would not be without its limit', () => {
   const r = stage();
-  const clash = interference(r, poseTree(r, { carriage: 0 }).poses);
-  assert.ok(clash.some((c) => [c.a, c.b].includes('carriage') && [c.a, c.b].includes('mount')),
-    'at travel 0 the carriage is on top of the motor mount');
+  const { variables } = poseTree(r);
+  const [lo, hi] = variables.get('carriage').limits;
+  const fouls = (at) => interference(r, poseTree(r, { carriage: at }).poses)
+    .some((c) => [c.a, c.b].includes('carriage') && [c.a, c.b].includes('motor_flange'));
+
+  assert.equal(fouls(lo), false, 'clear at the bottom of the stroke');
+  assert.equal(fouls(hi), false, 'clear at the top of the stroke');
+  assert.equal(fouls(0), true, 'and would foul the flange if the limit let it down there');
 });
 
 test('a point transforms the same way through a frame and its parts', () => {

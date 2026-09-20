@@ -4,7 +4,9 @@
   "status": "does-not-exist",
   "kind": "made",
   "parameters": {
-    "profile": "2020"
+    "profile": "2020",
+    "length": 60,
+    "height": 8
   },
   "designation": "2020 belt carriage",
   "envelope": {
@@ -16,11 +18,8 @@
     "max": [
       30,
       24,
-      18
+      8
     ]
-  },
-  "mass": {
-    "volume_mm3": 21500
   },
   "anchors": {
     "rail_face": {
@@ -52,7 +51,7 @@
       "origin": [
         0,
         0,
-        18
+        8
       ],
       "normal": [
         0,

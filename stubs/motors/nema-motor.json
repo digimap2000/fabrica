@@ -52,11 +52,20 @@
       }
     },
     "shaft": {
-      "kind": "face",
+      "kind": "track",
       "origin": [
         0,
         0,
-        72
+        48
+      ],
+      "axis": [
+        0,
+        0,
+        1
+      ],
+      "range": [
+        0,
+        24
       ],
       "normal": [
         0,
@@ -71,6 +80,7 @@
       "interface": {
         "archetype": "shaft",
         "diameter": 5,
+        "flat": true,
         "gender": "shaft"
       }
     }
