@@ -13,7 +13,7 @@
 // because two pulleys whose axes have drifted apart is a real mistake and the
 // formula would quietly return a plausible number for it.
 
-import { anchorInWorld, boxInWorld } from './pose.js';
+import { anchorInWorld, boxInWorld, envelopeOf } from './pose.js';
 import { add, cross, distance, dot, length, normalise, origin, scale } from './matrix.js';
 import { ERROR, WARN } from './resolve.js';
 
@@ -84,7 +84,7 @@ export function resolveRoutes(resolved, poses) {
   // Every posed body's world box, computed once for the clearance check below.
   const boxes = new Map();
   for (const [name, instance] of resolved.instances) {
-    const box = boxInWorld(instance.meta?.envelope, poses.get(name));
+    const box = boxInWorld(envelopeOf(instance), poses.get(name));
     if (box) boxes.set(name, box);
   }
 

@@ -155,7 +155,7 @@ test('the belt follows the travel, because the idler does', () => {
 // there, each caught by this check, so what is asserted now is that moving
 // ONE of them still fails: the agreement has to be real, not assumed.
 test('pitch circles out of plane are refused rather than projected away', () => {
-  const r = resolve(parse(source.replace('idler_post.spindle@18', 'idler_post.spindle@8'), STAGE), catalogue, {});
+  const r = resolve(parse(source.replace('idler_shaft.shaft@18', 'idler_shaft.shaft@8'), STAGE), catalogue, {});
   const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
   const message = diagnostics.find((d) => /apart along the axis/.test(d.message));
   assert.ok(message, JSON.stringify(diagnostics));
@@ -169,7 +169,7 @@ test('pitch circles out of plane are refused rather than projected away', () => 
 // whether the path was clear.
 test('a belt threaded through the machine is refused', () => {
   const r = resolve(parse(source.replace('motor.shaft@18', 'motor.shaft@8')
-                                .replace('idler_post.spindle@18', 'idler_post.spindle@8'), STAGE),
+                                .replace('idler_shaft.shaft@18', 'idler_shaft.shaft@8'), STAGE),
                     catalogue, {});
   const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
   const message = diagnostics.find((d) => /passes through/.test(d.message));

@@ -201,51 +201,26 @@ own README and the print list is what will make it load-bearing.
 
 ---
 
-## 2. `idlers/idler-post` - HELD
+## 2. `idlers/idler-post` - BUILT, as `motors/nema-idler-shaft`
 
-**A rigid axle component is on its way from mechanica, and it supersedes this.**
-The stub stays so the stage still resolves and the viewer still draws something
-at that end, and it should be deleted rather than built the day the axle lands.
+Done, and better than asked. It is a printed block that clamps a **steel rod**
+with a grub screw and presents a NEMA face - so the rod is bought stock rather
+than printed plastic, which is the right way round for a shaft something turns
+on, and was not in the request.
 
-The idler pulley now runs on a **plain bore** straight onto the spindle. It ran
-on a flanged bushing until the axle was announced; refining a stand-in that is
-on its way out is work thrown away twice.
+It carries the one property the ask leant on: the face at `body_length` with the
+shaft beyond it, exactly as `motors/nema-motor` does. The proof is that swapping
+the stand-in for the real part **changed no number in the machine at all** -
+`shaft@18` was right before and after. Every previous version of the idler end
+needed its position retuned on any edit that touched either end.
 
-What follows is what the ask had become, and it is left because the shape of it
-is probably still right - whatever the axle turns out to be, it wants to leave
-a NEMA face at the same place a motor's shaft does, for the reason in the last
-paragraph.
-
-**Changed twice, and got smaller each time.** First a block that bolts into a
-T-slot. Then a mirror of the NEMA L bracket. Now: the L bracket you already have
-serves BOTH ends of the stage, and all that is wanted is a short post that bolts
-to a NEMA face and presents a plain spindle.
-
-**Designation:** `"{frame} idler post, {spindle} mm spindle"`
-
-| Name | Type | Aspect | Notes |
-| --- | --- | --- | --- |
-| `frame` | `standard` | form | family `nema_frame` - it wears the same face |
-| `body_length` | `distance` | size | 20 in the stage; enough to stand the spindle clear |
-| `spindle` | `distance` | form | settled by the bushing that runs on it - 5 |
-| `spindle_length` | `distance` | size | bushing plus a retaining washer |
-
-**Model it motor-shaped, and that is the specification rather than a
-suggestion.** Face at `body_length` with the spindle beyond it, exactly as
-`motors/nema-motor` has its flange at `body_length` with its shaft beyond. Then
-the same bracket, the same face and the same position along the two put both
-pulleys in one plane **by construction**.
-
-That is worth the paragraph because the alternative was tried three times. A
-shaft and a spindle that stack in opposite directions need two hand-tuned
-numbers that have to agree, and they drifted apart on every change that touched
-either end - 3, then 2, then something else again - each time caught only
-because fabrica measures whether the pitch circles are coplanar. Make the two
-ends the same shape and there is nothing left to get wrong.
-
-**Interface:** `face` carrying the NEMA pattern at `[0, 0, body_length]`, and
-`spindle` as a **track** from the same point - a pulley slides along a spindle
-and a circlip decides where.
+One thing it turned up. mechanica draws the rod as **hardware**, and fabrica
+does not render another part's hardware because it places its own components -
+so the rod would have been left out of the bill of materials entirely. It is
+declared as stock in the machine to put it back. That is a general problem
+rather than this part's: **anything mechanica models as hardware is invisible to
+a BOM built from fabrica's own instances**, and a bill that omits a thing you
+must order is simply wrong. Worth a rule rather than a patch per part.
 
 ## 3. `carriages/belt-carriage`
 

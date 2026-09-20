@@ -107,8 +107,20 @@ function resolveInstances(machine, params, catalogue, diagnostics) {
     // The stub holds one parameter set; the machine may ask for another. Until
     // there is an API that actually resolves parameters, say so rather than
     // quietly presenting the stub's numbers as though they were the answer.
+    //
+    // But only for parameters the stub's geometry does not already FOLLOW. An
+    // anchor or an envelope may name a parameter instead of pinning a number,
+    // and where it does the stub is right at any value - so warning about it
+    // was a claim that had stopped being true, and a warning nobody can act on
+    // is how the ones that matter get skipped.
     if (meta?.parameters) {
-      const differing = Object.keys(args).filter((k) => k in meta.parameters && meta.parameters[k] !== args[k]);
+      const followed = new Set(
+        JSON.stringify([meta.anchors ?? {}, meta.envelope ?? {}]).match(/"[a-z_]+"/g)
+          ?.map((s) => s.slice(1, -1)) ?? [],
+      );
+      const differing = Object.keys(args).filter(
+        (k) => k in meta.parameters && meta.parameters[k] !== args[k] && !followed.has(k),
+      );
       if (differing.length) {
         diagnostics.push({
           severity: WARN,
@@ -213,7 +225,8 @@ function buildTree(machine, instances, diagnostics, consumed) {
     const instance = instances.get(name);
     // A route is flexible stock threaded through anchors, not a jointed body,
     // so it is expected to be off the tree. Anything else floating is a mistake.
-    const floating = machine.routes.some((r) => r.name === name) || consumed.has(name);
+    const jointable = Object.keys(instance.meta?.anchors ?? {}).length > 0;
+    const floating = machine.routes.some((r) => r.name === name) || consumed.has(name) || !jointable;
     if (!floating) {
       diagnostics.push({
         severity: WARN,

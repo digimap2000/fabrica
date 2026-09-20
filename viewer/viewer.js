@@ -17,7 +17,7 @@ import { OrbitControls } from './vendor/OrbitControls.js';
 import { parse } from '../src/parse.js';
 import { catalogueFrom } from '../src/catalogue.js';
 import { resolve, ERROR } from '../src/resolve.js';
-import { poseTree, extent, interference, anchorInWorld } from '../src/pose.js';
+import { poseTree, extent, interference, anchorInWorld, envelopeOf } from '../src/pose.js';
 import { resolveRoutes } from '../src/route.js';
 import { billOfMaterials } from '../src/bom.js';
 import { fetchMesh, meshQuery, health } from '../src/mechanica.js';
@@ -274,7 +274,7 @@ async function render() {
       if (built?.error) notes.set(instance.id, built.error);
       // Orange means mechanica has no geometry for this, which is a question
       // about the component's status and not about who pays for it.
-      const box = boxFor(instance.meta?.envelope, instance.meta?.status === 'does-not-exist');
+      const box = boxFor(envelopeOf(instance), instance.meta?.status === 'does-not-exist');
       if (box) node.add(box);
     }
     assembly.add(node);

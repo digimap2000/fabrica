@@ -17,7 +17,7 @@
     "max": [
       10,
       10,
-      200
+      "length"
     ]
   },
   "_measured": "runs along its own +z from 0 to length, 20 square centred on x and y. end_b and the slot ranges are written as the parameter name rather than a number, because they move when the part is configured - which a constant cannot say, and which silently froze the stage's idler end at 200 mm.",

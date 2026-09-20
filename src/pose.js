@@ -48,6 +48,18 @@ export function resolveAnchor(anchor, args, where = 'anchor') {
   return { ...anchor, origin: fix(anchor.origin), axis: fix(anchor.axis), range: fix(anchor.range) };
 }
 
+// An envelope moves with its parameters for exactly the same reason an anchor
+// does: a 250 mm beam does not occupy a 200 mm box. Left as constants it made
+// every extent, sweep and clash on this machine quietly wrong at any length but
+// the one the stub happened to be written at.
+export function resolveEnvelope(envelope, args, where = 'envelope') {
+  if (!envelope) return envelope;
+  return {
+    min: envelope.min.map((v) => valueOf(v, args, where)),
+    max: envelope.max.map((v) => valueOf(v, args, where)),
+  };
+}
+
 // An anchor's frame on its own body. A track takes a position along its axis;
 // everything else ignores it.
 export function anchorFrame(anchor, at = 0) {
@@ -201,10 +213,13 @@ export const unionBox = (a, b) =>
     max: a.max.map((v, i) => Math.max(v, b.max[i])),
   };
 
+export const envelopeOf = (instance) =>
+  resolveEnvelope(instance?.meta?.envelope, instance?.args, instance?.name);
+
 export function extent(resolved, poses) {
   let box = null;
   for (const [name, instance] of resolved.instances) {
-    box = unionBox(box, boxInWorld(instance.meta?.envelope, poses.get(name)));
+    box = unionBox(box, boxInWorld(envelopeOf(instance), poses.get(name)));
   }
   return box;
 }
@@ -255,7 +270,7 @@ const overlapDepth = (a, b) =>
 export function interference(resolved, poses, slack = 0.5) {
   const boxes = [];
   for (const [name, instance] of resolved.instances) {
-    const box = boxInWorld(instance.meta?.envelope, poses.get(name));
+    const box = boxInWorld(envelopeOf(instance), poses.get(name));
     if (box) boxes.push({ name, box });
   }
 

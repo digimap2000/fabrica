@@ -135,8 +135,11 @@ test('two instances of one part at one parameter set are a single line', () => {
 test('parts mechanica does not have are carried, not dropped', () => {
   const made = billOfMaterials(stage()).made;
   const absent = made.filter((l) => l.status !== 'exists').map((l) => l.id).sort();
-  assert.deepEqual(absent,
-    ['carriages/belt-carriage', 'clamps/belt-clamp', 'idlers/idler-post']);
+  // Down to two. It was four when this machine was first written, and each one
+  // has gone by mechanica building it rather than by the ask being dropped -
+  // the motor mount, the idler bracket and then the idler post, which became
+  // motors/nema-idler-shaft.
+  assert.deepEqual(absent, ['carriages/belt-carriage', 'clamps/belt-clamp']);
   assert.equal(made.length, 6, 'every made part appears whether or not it exists yet');
 });
 

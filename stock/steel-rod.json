@@ -1,0 +1,15 @@
+{
+  "id": "rod",
+  "source": "fabrica/stock",
+  "status": "exists",
+  "kind": "bought",
+  "parameters": {
+    "diameter": 5,
+    "length": 54
+  },
+  "designation": "5 mm steel rod, 54 mm",
+  "material": "steel",
+  "supplier_note": "Cut from ground silver steel or a printer's spare X axis. Cut length, not a stock size.",
+  "_why": "mechanica models this rod as HARDWARE inside motors/nema-idler-shaft, and fabrica does not draw another part's hardware because it places its own components. That leaves the rod out of the BOM unless it is declared, and it is a thing you buy.",
+  "anchors": {}
+}

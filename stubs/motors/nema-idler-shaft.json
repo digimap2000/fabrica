@@ -1,15 +1,15 @@
 {
-  "id": "idlers/idler-post",
+  "id": "motors/nema-idler-shaft",
   "source": "mechanica",
-  "status": "does-not-exist",
+  "status": "exists",
   "kind": "made",
   "parameters": {
     "frame": "17",
-    "body_length": 20,
-    "spindle": 5,
-    "spindle_length": 24
+    "shaft": 5,
+    "shaft_length": 24,
+    "body_length": 30
   },
-  "designation": "NEMA 17 idler post, 5 mm spindle",
+  "designation": "NEMA 17 idler shaft",
   "material": "printed",
   "envelope": {
     "min": [
@@ -20,10 +20,11 @@
     "max": [
       21.15,
       21.15,
-      44
+      32
     ]
   },
-  "_wanted": "a stub that bolts to a NEMA face and presents a plain spindle where a motor would present a shaft. Deliberately motor-shaped: the face at body_length with the spindle beyond it, so the same bracket and the same position along the two put the two pulleys in one plane without anybody working it out.",
+  "_measured": "block from 0 to body_length + 2; the 2 is the spigot standing proud of the face. The steel rod it clamps is hardware and runs 0 to body_length + shaft_length, which is what the shaft track below describes.",
+  "_anchors_follow": "coordinates written as a parameter name move when the part is configured",
   "anchors": {
     "face": {
       "kind": "face",
@@ -53,7 +54,7 @@
         "gender": "clearance"
       }
     },
-    "spindle": {
+    "shaft": {
       "kind": "track",
       "origin": [
         0,
@@ -67,7 +68,7 @@
       ],
       "range": [
         0,
-        24
+        "shaft_length"
       ],
       "normal": [
         0,
@@ -80,11 +81,19 @@
         0
       ],
       "interface": {
-        "archetype": "bore",
+        "archetype": "shaft",
         "diameter": 5,
         "gender": "shaft"
       }
     }
   },
-  "_anchors_follow": "coordinates written as a parameter name move when the part is configured; a constant there is a silent lie"
+  "mechanica": {
+    "id": "motors/nema-idler-shaft",
+    "map": {
+      "frame": {
+        "17": "nema_frame:17",
+        "23": "nema_frame:23"
+      }
+    }
+  }
 }

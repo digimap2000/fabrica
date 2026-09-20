@@ -73,6 +73,11 @@
 stock beam  = <extrusions/t-slot-extrusion>(extrusion=profile, length=travel + 150);
 stock motor = <motors/nema-motor>(frame=frame, body_length=48, shaft_length=24);
 
+// The rod the idler shaft clamps. mechanica draws it as hardware inside that
+// part and fabrica does not render another part's hardware, so without this line
+// the bill of materials would quietly omit a length of steel you have to buy.
+stock idler_rod = <rod>(diameter=5, length=54);
+
 // No T-nuts. The first version bolted brackets into the beam's slots and needed
 // eight of them; the flange hub bolts to a bolt circle instead, and the only
 // thing touching a slot now is the carriage, which rides it rather than being
@@ -102,8 +107,13 @@ part motor_bracket = <brackets/nema-l-bracket>(frame=frame, holes=4, hole_circle
 // short post shaped like a motor with no motor in it.
 part idler_bracket = <brackets/nema-l-bracket>(frame=frame, holes=4, hole_circle=44, hole=3.4,
                                                width=60, flange_leg=60, motor_leg=70);
-part idler_post    = <idlers/idler-post>(frame=frame, body_length=20,
-                                         spindle=5, spindle_length=24);           // TODO(mechanica)
+// Was a stand-in of mine called idler-post; mechanica built the real thing. It
+// is a printed block that clamps a steel rod with a grub screw, presenting a
+// NEMA face at one end - so the same bracket carries a motor at one end of the
+// stage and this at the other, which is the hub argument arriving at its
+// conclusion.
+part idler_shaft = <motors/nema-idler-shaft>(frame=frame, shaft=5,
+                                             shaft_length=24, body_length=30);
 
 part drive_pulley = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=5);
 
@@ -169,16 +179,17 @@ joint fixed idler_flange.flange -> idler_bracket.flange_face {
     fasten = <hardware/cap-screw>(standard="M5", length=16) x4;
 }
 
-joint fixed idler_bracket.motor_face_reverse -> idler_post.face {
+joint fixed idler_bracket.motor_face_reverse -> idler_shaft.face {
     fasten = <hardware/cap-screw>(standard="M3", length=10) x4;
 }
 
-// The SAME number as the motor's shaft, and that is the point of the post being
-// motor-shaped. It was 3, then 2, then it would have been something else again
-// after this change - two hand-tuned numbers that had to agree and kept not
-// agreeing, each time caught only because fabrica measures whether the pitch
-// circles are coplanar. Now they agree by construction.
-joint revolute idler_post.spindle@18 -> idler_pulley.bore {
+// The SAME number as the motor's shaft, and it stayed the same number when the
+// stand-in was swapped for mechanica's real part - because both put their face
+// at body_length with the shaft beyond it. That property was the whole of the
+// ask, and it is why this change moved nothing: it was 3, then 2, then it would
+// have been something else again on every edit, back when the two ends were
+// different shapes and two hand-tuned numbers had to agree.
+joint revolute idler_shaft.shaft@18 -> idler_pulley.bore {
     axis = [0, 0, 1];
 }
 
