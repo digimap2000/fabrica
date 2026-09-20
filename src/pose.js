@@ -243,8 +243,14 @@ export function sweptExtent(resolved, steps = 9) {
 // not overlap as solids. A non-empty one is a list to look at, and it becomes a
 // real answer when there are meshes to ask.
 
-const overlaps = (a, b, slack) =>
-  a && b && [0, 1, 2].every((i) => a.min[i] < b.max[i] - slack && b.min[i] < a.max[i] - slack);
+// How deep two boxes overlap, or a negative number for the gap between them.
+// The depth is what the bare pair of names was missing: 0.2 mm is two corners
+// grazing and is usually the box being a poor stand-in for a round part, where
+// 3 mm is a part in the wrong place. Without it every report reads the same and
+// they all get dismissed together - which is what happened to a pulley sitting
+// 3 mm inside a bracket for four commits.
+const overlapDepth = (a, b) =>
+  (!a || !b) ? null : Math.min(...[0, 1, 2].map((i) => Math.min(a.max[i] - b.min[i], b.max[i] - a.min[i])));
 
 export function interference(resolved, poses, slack = 0.5) {
   const boxes = [];
@@ -263,8 +269,9 @@ export function interference(resolved, poses, slack = 0.5) {
   for (let i = 0; i < boxes.length; i++) {
     for (let j = i + 1; j < boxes.length; j++) {
       if (related(boxes[i].name, boxes[j].name)) continue;
-      if (overlaps(boxes[i].box, boxes[j].box, slack)) {
-        found.push({ a: boxes[i].name, b: boxes[j].name });
+      const depth = overlapDepth(boxes[i].box, boxes[j].box);
+      if (depth !== null && depth > slack) {
+        found.push({ a: boxes[i].name, b: boxes[j].name, depth });
       }
     }
   }

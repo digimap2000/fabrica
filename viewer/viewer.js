@@ -101,29 +101,38 @@ function edgeFor(name) {
 // unnoticed until somebody looked at the pulley and inferred it. A length in a
 // table is not a thing you can judge by eye; the path is.
 function beltPath(route) {
-  if (!route.runs || route.clearance == null) return null;
+  if (!route.runs) return null;
   const [runA, runB] = route.runs;
-  const v = new THREE.Vector3(...runA[0]).sub(new THREE.Vector3(...runB[0]));
-  const points = [];
+  const V = (a) => new THREE.Vector3(...a);
 
-  // Each end is half a turn, swept from one tangent point to the other through
-  // the side facing away from the other pulley.
-  const arc = (from, to, away) => {
-    const centre = new THREE.Vector3(...from).add(new THREE.Vector3(...to)).multiplyScalar(0.5);
-    const out = new THREE.Vector3(...from).sub(centre);
-    const side = away.clone().normalize().multiplyScalar(out.length());
-    for (let i = 0; i <= 18; i++) {
+  // The two ends of each run are the tangent points at each pulley, so the
+  // centres are their midpoints and the bulge direction is from one CENTRE to
+  // the other - along the belt, not across it.
+  //
+  // It was across it. runA[0] minus runB[0] is the two runs' own offset, which
+  // is perpendicular to the length, so each half turn swept the wrong way and
+  // the loop came out as a lens a pitch radius too wide. It drew a belt-coloured
+  // line in roughly the right place, which is how it passed a glance.
+  const p1 = V(runA[0]).add(V(runB[0])).multiplyScalar(0.5);
+  const p2 = V(runA[1]).add(V(runB[1])).multiplyScalar(0.5);
+  const along = V(p2).sub(p1).normalize();
+
+  const points = [];
+  const arc = (from, centre, away) => {
+    const out = V(from).sub(centre);
+    const side = away.clone().multiplyScalar(out.length());
+    for (let i = 1; i <= 18; i++) {
       const a = (i / 18) * Math.PI;
       points.push(centre.clone()
         .add(out.clone().multiplyScalar(Math.cos(a)))
         .add(side.clone().multiplyScalar(Math.sin(a))));
     }
   };
-  points.push(new THREE.Vector3(...runA[0]));
-  points.push(new THREE.Vector3(...runA[1]));
-  arc(runA[1], runB[1], v.clone().negate());
-  points.push(new THREE.Vector3(...runB[0]));
-  arc(runB[0], runA[0], v);
+
+  points.push(V(runA[0]), V(runA[1]));
+  arc(runA[1], p2, along);                      // round the far pulley
+  points.push(V(runB[0]));
+  arc(runB[0], p1, along.clone().negate());     // and back round the near one
   return points;
 }
 
@@ -439,7 +448,8 @@ function showDerived(resolved, placed, routed) {
     }
   }
   const clashes = interference(resolved, placed.poses);
-  row('Clashes', clashes.length ? clashes.map((c) => `${c.a}/${c.b}`).join(', ') : 'none', clashes.length > 0);
+  row('Clashes', clashes.length
+    ? clashes.map((c) => `${c.a}/${c.b} ${c.depth.toFixed(1)}mm`).join(', ') : 'none', clashes.length > 0);
   frameOnce(resolved, placed);
 }
 

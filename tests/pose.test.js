@@ -69,7 +69,7 @@ test('ground is the origin and everything is placed from it', () => {
 test('the flange chain lands where the flange thickness says it does', () => {
   const { poses } = poseTree(stage());
   assert.ok(near(at('motor_flange', poses), [0, 0, -6]), JSON.stringify(at('motor_flange', poses)));
-  assert.ok(near(at('drive_pulley', poses), [-38, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
+  assert.ok(near(at('drive_pulley', poses), [-42, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
 
   // The motor hangs off the INSIDE of its leg, so its body sits over the
   // bracket at +x rather than out in space at -x, while the shaft still comes
@@ -107,7 +107,7 @@ test('joined faces have opposed normals and touch at a point', () => {
 // puts the pulley at -22.
 test('a pinned track puts the child that far along it', () => {
   const { poses } = poseTree(stage());
-  assert.ok(near(at('drive_pulley', poses), [-38, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
+  assert.ok(near(at('drive_pulley', poses), [-42, 0, -41]), JSON.stringify(at('drive_pulley', poses)));
 });
 
 // --- the joint that moves ---------------------------------------------------
@@ -155,12 +155,12 @@ test('the belt follows the travel, because the idler does', () => {
 // there, each caught by this check, so what is asserted now is that moving
 // ONE of them still fails: the agreement has to be real, not assumed.
 test('pitch circles out of plane are refused rather than projected away', () => {
-  const r = resolve(parse(source.replace('idler_post.spindle@14', 'idler_post.spindle@8'), STAGE), catalogue, {});
+  const r = resolve(parse(source.replace('idler_post.spindle@18', 'idler_post.spindle@8'), STAGE), catalogue, {});
   const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
   const message = diagnostics.find((d) => /apart along the axis/.test(d.message));
   assert.ok(message, JSON.stringify(diagnostics));
   assert.equal(message.severity, ERROR);
-  assert.ok(/6\.0 mm/.test(message.message), message.message);
+  assert.ok(/10\.0 mm/.test(message.message), message.message);
 });
 
 // The fouling that was pointed out rather than found: the belt ran straight
@@ -168,8 +168,8 @@ test('pitch circles out of plane are refused rather than projected away', () => 
 // belt is a path through a machine full of other things, and nothing asked
 // whether the path was clear.
 test('a belt threaded through the machine is refused', () => {
-  const r = resolve(parse(source.replace('motor.shaft@14', 'motor.shaft@8')
-                                .replace('idler_post.spindle@14', 'idler_post.spindle@8'), STAGE),
+  const r = resolve(parse(source.replace('motor.shaft@18', 'motor.shaft@8')
+                                .replace('idler_post.spindle@18', 'idler_post.spindle@8'), STAGE),
                     catalogue, {});
   const { diagnostics } = resolveRoutes(r, poseTree(r).poses);
   const message = diagnostics.find((d) => /passes through/.test(d.message));
@@ -220,7 +220,7 @@ test('both cut ends must be clamped to the same run', () => {
       const record = catalogue.get(id);
       if (id !== 'clamps/belt-clamp') return record;
       const copy = structuredClone(record);
-      copy.anchors.belt_b.origin[0] = 0 - copy.anchors.belt_b.origin[0];   // onto the other run
+      copy.anchors.belt_b.origin[0] = -6.365;      // the other run, a pitch radius the other side
       return copy;
     },
   };

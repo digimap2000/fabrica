@@ -54,9 +54,9 @@
     "belt_a": {
       "kind": "face",
       "origin": [
-        6.365,
+        "reach",
         -12,
-        9.5
+        "groove"
       ],
       "normal": [
         0,
@@ -77,9 +77,9 @@
     "belt_b": {
       "kind": "face",
       "origin": [
-        6.365,
+        "reach",
         12,
-        9.5
+        "groove"
       ],
       "normal": [
         0,
@@ -100,5 +100,6 @@
   },
   "_reach": "must equal the pulleys' pitch radius: the belt's runs are one radius either side of the axis, and a clamp that is not on a run grips air. 20 teeth at GT2 2 mm is a 12.73 pitch diameter, so 6.365.",
   "_groove": "how far the grip line stands off the carriage. The belt plane is the PITCH circle's plane, which sits 5.5 mm into the pulley from its bore face - so this is not just the clamp's own thickness. fabrica fails the build when it is wrong, which is how 9.5 was arrived at rather than 4.",
-  "material": "printed"
+  "material": "printed",
+  "_anchors_follow": "coordinates written as a parameter name move when the part is configured; a constant there is a silent lie"
 }

@@ -30,7 +30,7 @@
       "origin": [
         0,
         0,
-        20
+        "body_length"
       ],
       "normal": [
         0,
@@ -58,7 +58,7 @@
       "origin": [
         0,
         0,
-        20
+        "body_length"
       ],
       "axis": [
         0,
@@ -85,5 +85,6 @@
         "gender": "shaft"
       }
     }
-  }
+  },
+  "_anchors_follow": "coordinates written as a parameter name move when the part is configured; a constant there is a silent lie"
 }

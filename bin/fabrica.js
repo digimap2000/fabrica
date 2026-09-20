@@ -133,7 +133,7 @@ function printSpace(box, swept, clashes) {
       + `   (${swept.moving?.join(', ') ?? ''} through its limits, ${swept.samples} samples)\n`);
   }
   if (clashes?.length) {
-    process.stdout.write('  clashes   ' + clashes.map((c) => `${c.a}/${c.b}`).join(', ')
+    process.stdout.write('  clashes   ' + clashes.map((c) => `${c.a}/${c.b} ${c.depth.toFixed(1)}mm`).join(', ')
       + '\n            bounding boxes only - a candidate to look at, not a collision\n');
   }
 }

@@ -137,7 +137,7 @@ test('parts mechanica does not have are carried, not dropped', () => {
   const absent = made.filter((l) => l.status !== 'exists').map((l) => l.id).sort();
   assert.deepEqual(absent,
     ['carriages/belt-carriage', 'clamps/belt-clamp', 'idlers/idler-post']);
-  assert.equal(made.length, 7, 'every made part appears whether or not it exists yet');
+  assert.equal(made.length, 6, 'every made part appears whether or not it exists yet');
 });
 
 // --- the build order --------------------------------------------------------
