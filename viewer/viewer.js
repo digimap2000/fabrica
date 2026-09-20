@@ -17,7 +17,7 @@ import { OrbitControls } from './vendor/OrbitControls.js';
 import { parse } from '../src/parse.js';
 import { catalogueFrom } from '../src/catalogue.js';
 import { resolve, ERROR } from '../src/resolve.js';
-import { poseTree, extent, interference } from '../src/pose.js';
+import { poseTree, extent, interference, anchorInWorld } from '../src/pose.js';
 import { resolveRoutes } from '../src/route.js';
 import { billOfMaterials } from '../src/bom.js';
 import { fetchMesh, meshQuery, health } from '../src/mechanica.js';
@@ -95,6 +95,36 @@ function edgeFor(name) {
     edges.set(key, new THREE.LineBasicMaterial({ color: base.multiplyScalar(0.45) }));
   }
   return edges.get(key);
+}
+
+// The belt was never drawn, and that is why a clearance nobody could see went
+// unnoticed until somebody looked at the pulley and inferred it. A length in a
+// table is not a thing you can judge by eye; the path is.
+function beltPath(route) {
+  if (!route.runs || route.clearance == null) return null;
+  const [runA, runB] = route.runs;
+  const v = new THREE.Vector3(...runA[0]).sub(new THREE.Vector3(...runB[0]));
+  const points = [];
+
+  // Each end is half a turn, swept from one tangent point to the other through
+  // the side facing away from the other pulley.
+  const arc = (from, to, away) => {
+    const centre = new THREE.Vector3(...from).add(new THREE.Vector3(...to)).multiplyScalar(0.5);
+    const out = new THREE.Vector3(...from).sub(centre);
+    const side = away.clone().normalize().multiplyScalar(out.length());
+    for (let i = 0; i <= 18; i++) {
+      const a = (i / 18) * Math.PI;
+      points.push(centre.clone()
+        .add(out.clone().multiplyScalar(Math.cos(a)))
+        .add(side.clone().multiplyScalar(Math.sin(a))));
+    }
+  };
+  points.push(new THREE.Vector3(...runA[0]));
+  points.push(new THREE.Vector3(...runA[1]));
+  arc(runA[1], runB[1], v.clone().negate());
+  points.push(new THREE.Vector3(...runB[0]));
+  arc(runB[0], runA[0], v);
+  return points;
 }
 
 const BOXED = new THREE.LineBasicMaterial({ color: 0x6d7480 });
@@ -240,6 +270,20 @@ async function render() {
     }
     assembly.add(node);
   }));
+
+  // Flexible stock is not on the tree and has no pose, so it is drawn from the
+  // path the route resolved to rather than from a placed body.
+  for (const route of routed.routes) {
+    const points = beltPath(route);
+    if (!points) continue;
+    const instance = resolved.instances.get(route.name);
+    const material = instance?.meta?.material ?? 'rubber';
+    shown.set(material, (shown.get(material) ?? 0) + 1);
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    assembly.add(new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({
+      color: (MATERIALS[material] ?? UNKNOWN).color,
+    })));
+  }
 
   showParameters(resolved);
   showJoints(placed);
@@ -389,6 +433,10 @@ function showDerived(resolved, placed, routed) {
   }
   for (const route of routed.routes) {
     row(route.name, route.length == null ? 'not derived' : `${route.length.toFixed(1)} mm`, route.length == null);
+    // The number the eye cannot judge even once the belt is drawn.
+    if (route.clearance != null) {
+      row('  clearance', `${route.clearance.toFixed(1)} mm to ${route.nearest}`, route.clearance < 2);
+    }
   }
   const clashes = interference(resolved, placed.poses);
   row('Clashes', clashes.length ? clashes.map((c) => `${c.a}/${c.b}`).join(', ') : 'none', clashes.length > 0);

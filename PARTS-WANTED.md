@@ -201,7 +201,20 @@ own README and the print list is what will make it load-bearing.
 
 ---
 
-## 2. `idlers/idler-post`
+## 2. `idlers/idler-post` - HELD
+
+**A rigid axle component is on its way from mechanica, and it supersedes this.**
+The stub stays so the stage still resolves and the viewer still draws something
+at that end, and it should be deleted rather than built the day the axle lands.
+
+The idler pulley now runs on a **plain bore** straight onto the spindle. It ran
+on a flanged bushing until the axle was announced; refining a stand-in that is
+on its way out is work thrown away twice.
+
+What follows is what the ask had become, and it is left because the shape of it
+is probably still right - whatever the axle turns out to be, it wants to leave
+a NEMA face at the same place a motor's shaft does, for the reason in the last
+paragraph.
 
 **Changed twice, and got smaller each time.** First a block that bolts into a
 T-slot. Then a mirror of the NEMA L bracket. Now: the L bracket you already have

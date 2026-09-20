@@ -17,12 +17,42 @@ import { anchorInWorld, boxInWorld } from './pose.js';
 import { add, cross, distance, dot, length, normalise, origin, scale } from './matrix.js';
 import { ERROR, WARN } from './resolve.js';
 
+// How much room a belt wants beside whatever it runs past. Two millimetres is
+// not a calculation, it is a number small enough to be free and large enough
+// that a print tolerance and a bit of flex do not close it. A machine may say
+// otherwise per route.
+const DEFAULT_CLEARANCE = 2;
+
 const radiusOf = (anchor) => {
   const face = anchor.interface ?? {};
   if (face.diameter !== undefined) return face.diameter / 2;
   if (face.radius !== undefined) return face.radius;
   return null;
 };
+
+// How far a point is from a box: positive outside, negative inside. Outside is
+// the usual clamped distance; inside is how far it would have to move to get
+// out through the nearest face.
+function pointToBox(p, box) {
+  const outside = [0, 1, 2].map((i) => Math.max(box.min[i] - p[i], 0, p[i] - box.max[i]));
+  const d = Math.hypot(...outside);
+  if (d > 0) return d;
+  return 0 - Math.min(...[0, 1, 2].map((i) => Math.min(p[i] - box.min[i], box.max[i] - p[i])));
+}
+
+// The nearest the segment gets to the box. Outside a convex body that distance
+// is convex along the segment, so a ternary search converges on it exactly
+// rather than approximately - which matters, because this number is the
+// difference between a belt that runs and a belt that rubs.
+function segmentToBox(from, to, box) {
+  const at = (s) => pointToBox([0, 1, 2].map((i) => from[i] + (to[i] - from[i]) * s), box);
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 60; i++) {
+    const a = lo + (hi - lo) / 3, b = hi - (hi - lo) / 3;
+    if (at(a) < at(b)) hi = b; else lo = a;
+  }
+  return Math.min(at((lo + hi) / 2), at(0), at(1));
+}
 
 // How far a segment reaches inside a box, or null if it misses. The slab method,
 // and the depth is what makes the message useful: 'by 0.3 mm' is a clearance to
@@ -220,20 +250,29 @@ export function resolveRoutes(resolved, poses) {
       add(a.point, scale(across, side * a.radius)),
       add(b.point, scale(across, side * b.radius)),
     ]);
-    const fouled = new Map();
+    // Not touching is not the same as having room. A belt that clears a bracket
+    // by nothing rubs on it the first time anything flexes, and a machine whose
+    // numbers all worked out is exactly where that goes unnoticed - so what is
+    // required is a clearance rather than an absence of contact.
+    const wanted = route.clearance === undefined ? DEFAULT_CLEARANCE : resolved.evaluate(route.clearance);
+    let nearest = { gap: Infinity, what: null };
+    const tight = new Map();
     for (const [instance, box] of boxes ?? []) {
       if (exempt.has(instance)) continue;
       for (const [from, to] of runs) {
-        const hit = segmentMeetsBox(from, to, box);
-        if (hit !== null) fouled.set(instance, Math.max(fouled.get(instance) ?? 0, hit));
+        const gap = segmentToBox(from, to, box);
+        if (gap < nearest.gap) nearest = { gap, what: instance };
+        if (gap < wanted) tight.set(instance, Math.min(tight.get(instance) ?? Infinity, gap));
       }
     }
-    if (fouled.size) {
+    if (tight.size) {
+      const through = [...tight].filter(([, g]) => g < 0);
       diagnostics.push({
         severity: ERROR,
-        message: `route '${name}': its run passes through `
-               + [...fouled].map(([n, d]) => `${n} (by ${d.toFixed(1)} mm)`).join(', ')
-               + ' - the belt has to have somewhere to go',
+        message: `route '${name}': ${through.length ? 'its run passes through' : 'its run has under ' + wanted + ' mm of clearance to'} `
+               + [...tight].map(([n, g]) => `${n} (${g < 0 ? 'by ' + (0 - g).toFixed(1) : g.toFixed(1) + ' mm'})`).join(', ')
+               + (through.length ? ' - the belt has to have somewhere to go'
+                                 : ' - a belt that clears by nothing rubs the first time anything flexes'),
       });
     }
 
@@ -242,6 +281,8 @@ export function resolveRoutes(resolved, poses) {
       id: route.of.id,
       length: closed - gap,
       runs,
+      clearance: nearest.gap === Infinity ? null : nearest.gap,
+      nearest: nearest.what,
       closed,
       gap,
       centres,

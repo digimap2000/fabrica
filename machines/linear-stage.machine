@@ -106,8 +106,12 @@ part idler_post    = <idlers/idler-post>(frame=frame, body_length=20,
                                          spindle=5, spindle_length=24);           // TODO(mechanica)
 
 part drive_pulley = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=5);
+
+// A plain bore straight onto the spindle, no bush. It ran on a flanged bushing
+// until the rigid axle mechanica is building was announced - which supersedes
+// the whole arrangement, so refining a stand-in on its way out would be work
+// thrown away twice.
 part idler_pulley = <pulleys/timing-pulley>(profile=belt_profile, teeth=20, bore=5);
-part idler_bush   = <bushings/flanged-bushing>(bore=5, outer_diameter=8, length=7);
 
 // 7, and the motor's reverse mount is what settled it. I assumed going round
 // the inside of the bracket would push the shaft further out and raised this to
@@ -173,8 +177,7 @@ joint fixed idler_bracket.motor_face_reverse -> idler_post.face {
 // after this change - two hand-tuned numbers that had to agree and kept not
 // agreeing, each time caught only because fabrica measures whether the pitch
 // circles are coplanar. Now they agree by construction.
-joint fixed    idler_post.spindle@14 -> idler_bush.bore;
-joint revolute idler_bush.outer        -> idler_pulley.bore {
+joint revolute idler_post.spindle@14 -> idler_pulley.bore {
     axis = [0, 0, 1];
 }
 
