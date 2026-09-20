@@ -16,7 +16,7 @@
 // This translation is temporary in the same way the stubs are. It is also the
 // clearest requirement to have come out of building the viewer, and README.md
 // says so rather than leaving it as a quirk of this function.
-export function meshQuery(instance, { lod = 'coarse' } = {}) {
+export function meshQuery(instance, { lod = null } = {}) {
   const bridge = instance.meta?.mechanica;
   if (!bridge) return null;
 
@@ -28,24 +28,39 @@ export function meshQuery(instance, { lod = 'coarse' } = {}) {
     const mapped = bridge.map?.[key]?.[value];
     params.set(name, mapped ?? String(value));
   }
+  // No lod at all, which asks for full detail. 'coarse' is a third the triangles
+  // and strips two things fabrica wants: the feature edges that make a rendered
+  // part legible, and the hardware block that carries the only materials
+  // anywhere in this API. Asking for less was costing both.
   if (lod) params.set('lod', lod);
   return params.toString();
 }
 
-// mechanica's mesh payload, as its README documents it: the magic "MMS2", three
-// u32 counts of FLOATS (not vertices), then that many float32s, little-endian.
+// mechanica's mesh payload: a four-byte magic, three u32 counts of FLOATS (not
+// vertices), then that many float32s, little-endian.
 //
-// Checked rather than trusted. A wrong magic here means the request was answered
-// by something other than the API - an error page, a proxy, a login redirect -
-// and silently handing that to a renderer produces a blank viewport and an hour
-// of looking in the wrong place.
+// TWO magics, which is the thing worth knowing. MMS2 is what a reduced level of
+// detail returns and is the three arrays and nothing else. MMS3 is what full
+// detail returns, and carries a further block: the HARDWARE a part is designed
+// around, each piece with the material it is made of. The header is identical,
+// so a reader of MMS2 consumes an MMS3 payload happily and simply stops early -
+// which is exactly what fabrica did, discarding 73 kB of motor per bracket
+// without a word, because the length check only ever asked whether there were
+// too FEW bytes.
+//
+// The magic is checked rather than trusted. A wrong one means the request was
+// answered by something other than the API - an error page, a proxy, a login
+// redirect - and handing that to a renderer gives a blank viewport and an hour
+// spent looking at the camera.
+const MAGICS = new Set(['MMS2', 'MMS3']);
+
 export function decodeMesh(buffer) {
   const view = new DataView(buffer);
   if (buffer.byteLength < 16) throw new Error('mesh payload is too short to be one');
 
   const magic = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
-  if (magic !== 'MMS2') {
-    throw new Error(`expected an MMS2 mesh, got '${magic}' - something other than the API answered`);
+  if (!MAGICS.has(magic)) {
+    throw new Error(`expected an MMS2 or MMS3 mesh, got '${magic}' - something other than the API answered`);
   }
 
   const vertexFloats = view.getUint32(4, true);
@@ -71,11 +86,53 @@ export function decodeMesh(buffer) {
     return out;
   };
 
+  const positions = take(vertexFloats);
+  const normals = take(normalFloats);
+  const edges = take(edgeFloats);
+
+  // The part is followed by the HARDWARE it is designed around: the fastener or
+  // the motor mechanica draws in place to show what the part is for. Each piece
+  // carries the material it is made of, which is the only material anywhere in
+  // this payload - the part's own body has none, because what a printed part is
+  // made of is the printer's business and not the model's.
+  //
+  // fabrica read the three arrays and stopped, and the length check only ever
+  // asked whether there were too FEW bytes - so 73 kB of motor arrived with
+  // every bracket and was thrown away without a word. Reading it was one line;
+  // noticing it was the work.
+  const hardware = [];
+  if (magic === 'MMS3' && at < buffer.byteLength) {
+    const pieces = view.getUint32(at, true);
+    at += 4;
+    for (let i = 0; i < pieces && at + 24 <= buffer.byteLength; i++) {
+      // Sixteen bytes, space padded. Fixed width rather than length-prefixed,
+      // which is why it is trimmed rather than sliced to a count.
+      let material = '';
+      for (let k = 0; k < 16; k++) material += String.fromCharCode(view.getUint8(at + k));
+      at += 16;
+      const pieceVertices = view.getUint32(at, true);
+      const pieceNormals = view.getUint32(at + 4, true);
+      at += 8;
+      hardware.push({
+        material: material.trim(),
+        positions: take(pieceVertices),
+        normals: take(pieceNormals),
+        triangles: pieceVertices / 9,
+      });
+    }
+  }
+
   return {
-    positions: take(vertexFloats),
-    normals: take(normalFloats),
-    edges: take(edgeFloats),
+    format: magic,
+    positions,
+    normals,
+    edges,
+    hardware,
     triangles: vertexFloats / 9,
+    // What was in the response and not understood. Zero is the expected answer
+    // and anything else means the format has moved, which is worth knowing
+    // rather than silently tolerating a second time.
+    unread: buffer.byteLength - at,
   };
 }
 

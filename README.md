@@ -170,6 +170,30 @@ kernel version and per-component source hashes - exactly as mechanica's
 `previews/manifest.json` stamps its baked meshes - so staleness is a test failure
 rather than a wrong answer.
 
+## Materials, and what the payload actually carries
+
+mechanica exports a material, but only for **hardware** - the fastener or motor
+a part is drawn around to show what it is for - and only at full detail. There
+are two magics: `MMS2` is the three float arrays and nothing else, and `MMS3`
+adds a hardware block, each piece carrying a sixteen-byte material name. The
+headers are identical, so a reader of the first consumes the second happily and
+stops early. fabrica did exactly that, discarding 73 kB of motor with every
+bracket it fetched, because the only length check asked whether there were too
+*few* bytes. `decodeMesh` now reports what it did not read, and expects zero.
+
+A part's own body has no material and should not: what a printed part is made of
+is the printer's business. fabrica colours by whether mechanica has the geometry
+at all, which is its own question.
+
+**fabrica does not draw the hardware**, and that is deliberate rather than
+unfinished. mechanica's L bracket ships with a motor inside it; fabrica places
+that same motor itself, as a real component with a real pose, so rendering both
+would draw it twice. What the ghost is good for is a second opinion - ask
+mechanica where it thinks the motor goes, ask fabrica, and compare. They agree
+to 0.0 mm in two axes and differ in the third only by the body length the
+machine asked for, which is the most convincing check of the frames there has
+been.
+
 ## What fabrica asks of mechanica
 
 `PARTS-WANTED.md` is the concrete version of this: four components the linear

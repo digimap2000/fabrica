@@ -117,7 +117,13 @@ ground beam;
 // not at its mouth.
 joint fixed beam.end_a -> motor_flange.socket;
 
+// Four holes on a circle is four valid mountings, ninety degrees apart, and
+// this says which. Nothing but the rest of the machine chooses between them:
+// at 180 the motor swings to +x and the belt plane goes with it, which fabrica
+// then refuses because the carriage still rides the -x slot. Flip both or
+// neither.
 joint fixed motor_flange.flange -> motor_bracket.flange_face {
+    clock  = 0;
     fasten = <hardware/cap-screw>(standard="M5", length=16) x4;
 }
 joint fixed motor_bracket.motor_face -> motor.flange {

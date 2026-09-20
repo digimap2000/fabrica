@@ -61,10 +61,18 @@ export function anchorFrame(anchor, at = 0) {
 // The clocking an interface asks for, in radians. This is the field that exists
 // because a NEMA face's holes sit at 45 degrees to the motor's own axes, and two
 // anchors agreeing on spacing and count can still be a quarter turn out.
-function clockingOf(parentAnchor, childAnchor) {
+//
+// And then the joint's own, which is a different thing and is why both exist. A
+// four-hole bolt circle has FOUR valid mountings, ninety degrees apart, all of
+// them correct and all of them putting the motor somewhere different. The
+// interface clock says what the pattern demands; the joint's says which of the
+// positions the pattern permits was actually wanted. Without it fabrica picked
+// one silently and a reasonable person expected another.
+function clockingOf(parentAnchor, childAnchor, joint, resolved) {
   const a = parentAnchor.interface?.clock ?? 0;
   const b = childAnchor.interface?.clock ?? 0;
-  return ((a - b) * Math.PI) / 180;
+  const chosen = joint?.clock === undefined ? 0 : resolved.evaluate(joint.clock);
+  return ((a - b + chosen) * Math.PI) / 180;
 }
 
 // The one rule, written once.
@@ -124,7 +132,7 @@ export function poseTree(resolved, chosen = {}) {
 
     const variable = variables.get(edge.child);
     let at = joint.parent.at === undefined ? 0 : resolved.evaluate(joint.parent.at);
-    let extra = rotationZ(clockingOf(parentAnchor, childAnchor));
+    let extra = rotationZ(clockingOf(parentAnchor, childAnchor, joint, resolved));
 
     if (joint.type === 'prismatic') at = variable.value;
     if (joint.type === 'revolute') extra = multiply(extra, rotationZ(variable.value));

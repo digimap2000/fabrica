@@ -69,8 +69,12 @@ test('different parameters give different queries, because the query is the cach
 
 // --- the payload -------------------------------------------------------------
 
-function payload({ magic = 'MMS2', positions = [], normals = [], edges = [], truncate = 0 } = {}) {
-  const buffer = new ArrayBuffer(16 + (positions.length + normals.length + edges.length) * 4);
+function payload({ magic = 'MMS2', positions = [], normals = [], edges = [],
+                   hardware = [], truncate = 0 } = {}) {
+  const tail = hardware.length
+    ? 4 + hardware.reduce((n, h) => n + 16 + 8 + (h.positions.length + (h.normals ?? h.positions).length) * 4, 0)
+    : 0;
+  const buffer = new ArrayBuffer(16 + (positions.length + normals.length + edges.length) * 4 + tail);
   const view = new DataView(buffer);
   for (let i = 0; i < 4; i++) view.setUint8(i, magic.charCodeAt(i));
   view.setUint32(4, positions.length, true);
@@ -78,6 +82,21 @@ function payload({ magic = 'MMS2', positions = [], normals = [], edges = [], tru
   view.setUint32(12, edges.length, true);
   let at = 16;
   for (const v of [...positions, ...normals, ...edges]) { view.setFloat32(at, v, true); at += 4; }
+
+  if (hardware.length) {
+    view.setUint32(at, hardware.length, true);
+    at += 4;
+    for (const piece of hardware) {
+      const name = piece.material.padEnd(16, ' ');      // fixed width, space padded
+      for (let k = 0; k < 16; k++) view.setUint8(at + k, name.charCodeAt(k));
+      at += 16;
+      const normals_ = piece.normals ?? piece.positions;
+      view.setUint32(at, piece.positions.length, true);
+      view.setUint32(at + 4, normals_.length, true);
+      at += 8;
+      for (const v of [...piece.positions, ...normals_]) { view.setFloat32(at, v, true); at += 4; }
+    }
+  }
   return truncate ? buffer.slice(0, buffer.byteLength - truncate) : buffer;
 }
 
@@ -95,7 +114,38 @@ test('a mesh decodes to the floats it was given', () => {
 // and an hour spent looking at the camera.
 test('anything that is not a mesh is refused by name', () => {
   assert.throws(() => decodeMesh(payload({ magic: 'HTML', positions: TRIANGLE })),
-    /expected an MMS2 mesh, got 'HTML'/);
+    /got 'HTML'/);
+});
+
+// Two magics, and the difference is a whole block of data. MMS2 is the three
+// arrays; MMS3 carries the hardware a part is designed around, each piece with
+// its material. The headers are identical, so an MMS2 reader consumes an MMS3
+// payload happily and stops early - which is what fabrica did, silently, for
+// every bracket it ever fetched.
+test('MMS3 carries hardware and its material; MMS2 carries none', () => {
+  const plain = decodeMesh(payload({ magic: 'MMS2', positions: TRIANGLE }));
+  assert.equal(plain.format, 'MMS2');
+  assert.deepEqual(plain.hardware, []);
+
+  const withMotor = decodeMesh(payload({
+    magic: 'MMS3', positions: TRIANGLE,
+    hardware: [{ material: 'steel', positions: TRIANGLE }],
+  }));
+  assert.equal(withMotor.format, 'MMS3');
+  assert.equal(withMotor.hardware.length, 1);
+  assert.equal(withMotor.hardware[0].material, 'steel', 'trimmed of its padding');
+  assert.equal(withMotor.hardware[0].triangles, 1);
+});
+
+// The check that would have caught the omission in the first place. Reading
+// three arrays and stopping left 73 kB unread per bracket and nothing said so,
+// because the only length check asked whether there were too FEW bytes.
+test('nothing in a payload goes unread without saying so', () => {
+  const m = decodeMesh(payload({
+    magic: 'MMS3', positions: TRIANGLE,
+    hardware: [{ material: 'brass', positions: TRIANGLE }],
+  }));
+  assert.equal(m.unread, 0);
 });
 
 test('a truncated payload is refused rather than half-read', () => {
